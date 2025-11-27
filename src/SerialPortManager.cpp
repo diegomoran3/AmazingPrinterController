@@ -108,5 +108,4 @@ void SerialPortManager::readComplete(const boost::system::error_code& error, siz
 {
     readComplete_ = true;
     readError_ = error;
-    timer_.cancel();
 }
