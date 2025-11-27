@@ -1,0 +1,8 @@
+{
+  "name": "example-project",
+  "version-string": "0.0.1",
+  "license": "MIT",
+  "dependencies": [
+    "boost-asio"
+  ]
+}

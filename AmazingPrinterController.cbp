@@ -36,6 +36,7 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add directory="../vcpkg/installed/x64-linux/include/" />
 		</Compiler>
 		<Unit filename="include/Application.h" />
 		<Unit filename="include/SerialPortManager.h" />
