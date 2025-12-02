@@ -5796,3 +5796,6 @@ out/build/CustomConfigurePreset/CMakeFiles/AmazingPrinterConverter.dir/src/Appli
 out/build/CustomConfigurePreset/CMakeFiles/AmazingPrinterConverter.dir/src/main.cpp.o
 bin/AmazingPrinterConverter
 out/build/CustomConfigurePreset/CMakeFiles/AmazingPrinterConverter.dir/src/SerialPortManager.cpp.o
+/.vs
+/bin/Debug
+/out/build
