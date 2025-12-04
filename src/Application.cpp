@@ -1,6 +1,6 @@
 #include "Application.h"
 
-Application::Application()
+Application::Application() : _serial(std::make_shared<SerialPortManager>()), grblManager_(_serial)
 {
     //ctor
 }
@@ -30,7 +30,7 @@ int Application::run()
         {
             case 1:
             {
-                auto ports = serial_.ScanPorts();
+                auto ports = _serial->ScanPorts();
 
                 if (ports.empty())
                 {
@@ -52,24 +52,24 @@ int Application::run()
                     return 1;
                 }
 
-                if (!serial_.OpenPort(ports[choice])) break;
+                if (!_serial->OpenPort(ports[choice])) break;
 
                 break;
             }
             case 2:{
-                if (!serial_.IsOpen()){
+                if (!_serial->IsOpen()){
                     std::cout << "\nSerial is not open\n";
                     break;
                 }
 
-                serial_.Write("G0 X5 Y5\n");
+                _serial->Write("G0 X5 Y5\n");
 
-                std::string response = serial_.ReadLine();
+                std::string response = _serial->ReadLine();
                 std::cout << response << std::endl;
                 break;
             }
             case 3:{
-                serial_.InitializeMachine();
+                grblManager_.InitializeMachine();
                 break;
             }
 

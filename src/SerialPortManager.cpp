@@ -45,31 +45,6 @@ bool SerialPortManager::OpenPort(const std::string& portName, unsigned int baudR
     }
 }
 
-bool SerialPortManager::InitializeMachine()
-{
-    if (!serial_.is_open())
-    {
-        std::cout << "Cannot initialize, port is not open\n";
-        return false;
-    }
-
-    unsigned char resetByte = 0x18;  // Ctrl+X (soft reset)
-    boost::asio::write(serial_, boost::asio::buffer(&resetByte, 1));
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-
-    std::string response = ReadLine();  // read first line
-    std::cout << response << std::endl;
-
-    while (true) {
-        std::string line = ReadLine();
-        if (line.empty()) break;  // GRBL usually ends with empty line
-        std::cout << line << std::endl;
-    }
-
-    return true;
-}
-
 void SerialPortManager::ClosePort() {
     if (serial_.is_open()) serial_.close();
 }
@@ -79,10 +54,14 @@ bool SerialPortManager::IsOpen() const {
 }
 
 bool SerialPortManager::Write(const std::string& data) {
+	return this->Write(boost::asio::buffer(data));
+}
+
+bool SerialPortManager::Write(const boost::asio::const_buffer& buffer) {
     if (!serial_.is_open()) return false;
 
     try {
-        boost::asio::write(serial_, boost::asio::buffer(data));
+        boost::asio::write(serial_, buffer);
         return true;
     } catch (const boost::system::system_error& e) {
         std::cerr << "Write error: " << e.what() << "\n";
@@ -91,21 +70,12 @@ bool SerialPortManager::Write(const std::string& data) {
 }
 
 std::string SerialPortManager::ReadLine() {
-    readBuffer_.clear();
-    readComplete_ = false;
-    readError_ = boost::system::error_code();
-
-    boost::asio::async_read_until(serial_,
-    boost::asio::dynamic_buffer(readBuffer_), '\n',
-    boost::bind(&SerialPortManager::readComplete, this,
-        boost::asio::placeholders::error,
-        boost::asio::placeholders::bytes_transferred));
-
-    return readBuffer_;
-}
-
-void SerialPortManager::readComplete(const boost::system::error_code& error, size_t bytes_transferred)
-{
-    readComplete_ = true;
-    readError_ = error;
+    std::string line;
+    char c;
+    while (true) {
+        boost::asio::read(serial_, boost::asio::buffer(&c, 1));
+        if (c == '\n') break;
+        line += c;
+    }
+    return line;
 }

@@ -5,6 +5,8 @@
 #include <iostream>
 #include <string>
 #include "SerialPortManager.h"
+#include "GRBLManager.h"
+#include "memory"
 
 class Application
 {
@@ -16,7 +18,8 @@ class Application
     protected:
 
     private:
-        SerialPortManager serial_;
+		GRBLManager grblManager_;
+        std::shared_ptr<SerialPortManager> _serial;
 };
 
 #endif // APPLICATION_H
