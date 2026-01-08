@@ -93,6 +93,13 @@ MainFrame::MainFrame()
         });
     });
 
+    m_grbl->SetOnStatusUpdate([this](const GrblStatus& status) {
+    this->CallAfter([this, status]() {
+            m_coordPanel->ClearPoints();
+            m_coordPanel->AddPoint(status.x, status.y);
+        });
+    });
+
     UpdatePortList();
 
     Centre();
@@ -145,8 +152,6 @@ void MainFrame::OnGoTo(wxCommandEvent& event) {
         wxLogError("Invalid coordinates!");
         return;
     }
-
-    m_coordPanel->AddPoint(x, y, *wxBLUE);
     
     // Abstracted logic: we just say MoveTo, we don't care about "G0" or "\n"
     m_grbl->MoveTo(x, y);

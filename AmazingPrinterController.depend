@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1767845522 source:/home/diego/sources/AmazingPrinterController/src/main.cpp
+1767867700 source:/home/diego/sources/AmazingPrinterController/src/main.cpp
 	<wx/wx.h>
 	"MainFrame.h"
 
@@ -6266,7 +6266,7 @@
 	<chrono>
 	<thread>
 
-1767866256 source:/home/diego/sources/AmazingPrinterController/src/SerialPortManager.cpp
+1767867703 source:/home/diego/sources/AmazingPrinterController/src/SerialPortManager.cpp
 	"SerialPortManager.h"
 
 1764864094 source:/home/diego/sources/AmazingPrinterController/src/Application.cpp
@@ -10769,13 +10769,14 @@
 1711874034 /usr/include/wx-3.2/wx/gtk/mdi.h
 	"wx/frame.h"
 
-1767848919 source:/home/diego/sources/AmazingPrinterController/src/MainFrame.cpp
+1767869098 source:/home/diego/sources/AmazingPrinterController/src/MainFrame.cpp
 	"MainFrame.h"
 
-1767866172 /home/diego/sources/AmazingPrinterController/include/MainFrame.h
+1767868523 /home/diego/sources/AmazingPrinterController/include/MainFrame.h
 	<wx/wx.h>
-	"SerialPortManager.h"
+	<memory>
 	"CoordinatePanel.h"
+	"GrblController.h"
 
 1767848641 source:/home/diego/sources/AmazingPrinterController/src/CoordinatePanel.cpp
 	"CoordinatePanel.h"
@@ -10790,4 +10791,15 @@
 	"wx/dcmemory.h"
 	"wx/dcclient.h"
 	"wx/window.h"
+
+1767868609 /home/diego/sources/AmazingPrinterController/include/GrblController.h
+	"SerialPortManager.h"
+	<wx/timer.h>
+	<string>
+	<memory>
+	<functional>
+
+1767868881 source:/home/diego/sources/AmazingPrinterController/src/GrblController.cpp
+	"GrblController.h"
+	<regex>
 
