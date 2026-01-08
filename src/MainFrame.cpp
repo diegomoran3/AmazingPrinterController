@@ -11,7 +11,7 @@ wxEND_EVENT_TABLE()
 
 MainFrame::MainFrame()
     : wxFrame(NULL, wxID_ANY, "Amazing Printer Controller", wxDefaultPosition, wxSize(600, 500)),
-      m_serialManager(std::make_unique<SerialPortManager>())
+      m_grbl(std::make_unique<GrblController>())
 {
     wxPanel* panel = new wxPanel(this, wxID_ANY);
     wxBoxSizer* mainSizer = new wxBoxSizer(wxHORIZONTAL); 
@@ -87,6 +87,12 @@ MainFrame::MainFrame()
     panel->SetSizer(mainSizer);
 
     // Initial Port Scan
+    m_grbl->SetOnMessageReceived([this](const std::string& line) {
+        this->CallAfter([this, line]() {
+            wxLogMessage("RX: %s", line);
+        });
+    });
+
     UpdatePortList();
 
     Centre();
@@ -94,18 +100,10 @@ MainFrame::MainFrame()
 
 void MainFrame::UpdatePortList() {
     m_portCombo->Clear();
-    std::vector<std::string> ports = m_serialManager->ScanPorts();
-
-    for (const auto& port : ports) {
-        m_portCombo->Append(port);
-    }
-
-    if (!ports.empty()) {
-        m_portCombo->SetSelection(0);
-        wxLogMessage("Found %zu serial ports.", ports.size());
-    } else {
-        wxLogMessage("No serial ports found. Check connections.");
-    }
+    auto ports = m_grbl->GetAvailablePorts();
+    for (const auto& port : ports) m_portCombo->Append(port);
+    
+    if (!ports.empty()) m_portCombo->SetSelection(0);
 }
 
 void MainFrame::OnRefresh(wxCommandEvent& event) {
@@ -113,35 +111,17 @@ void MainFrame::OnRefresh(wxCommandEvent& event) {
 }
 
 void MainFrame::OnConnect(wxCommandEvent& event) {
-    if (m_serialManager->IsOpen()) {
-        m_serialManager->ClosePort();
+    if (m_grbl->IsConnected()) {
+        m_grbl->Disconnect();
         m_connectBtn->SetLabel("Connect");
         m_portCombo->Enable(true);
         wxLogMessage("Disconnected.");
     } else {
         wxString selectedPort = m_portCombo->GetStringSelection();
-        if (selectedPort.IsEmpty()) {
-            wxLogError("Please select a port first!");
-            return;
-        }
-
-        // Try to open at 115200 baud (standard for GRBL)
-        if (m_serialManager->OpenPort(selectedPort.ToStdString(), 115200)) {
+        if (m_grbl->Connect(selectedPort.ToStdString())) {
             m_connectBtn->SetLabel("Disconnect");
             m_portCombo->Enable(false);
             wxLogMessage("Successfully connected to %s", selectedPort);
-
-            // Start listening. The lambda is called in a BACKGROUND thread.
-            m_serialManager->StartAsyncRead([this](const std::string& line) {
-
-                // We use CallAfter to send this 'job' to the Main GUI Thread.
-                // This ensures wxLogMessage is called safely.
-                this->CallAfter([this, line]() {
-                    // This code now runs on the main thread
-                    wxLogMessage("RX: %s", line);
-                });
-            });
-
         } else {
             wxLogError("Failed to open port %s", selectedPort);
         }
@@ -149,53 +129,26 @@ void MainFrame::OnConnect(wxCommandEvent& event) {
 }
 
 void MainFrame::OnSend(wxCommandEvent& event) {
-    if (!m_serialManager->IsOpen()) {
-        wxLogError("Not connected to any port!");
-        return;
-    }
+    if (!m_grbl->IsConnected()) return;
 
     wxString cmd = m_cmdInput->GetValue();
-    if (cmd.IsEmpty()) return; // Don't send empty strings
+    if (cmd.IsEmpty()) return;
 
-    // Convert to std::string
-    std::string commandToSend = cmd.ToStdString();
-
-    // Log what we are sending (TX)
-    wxLogMessage("TX: %s", commandToSend);
-
-    // CRITICAL: GRBL/Printers usually need a newline character to process the command
-    commandToSend += "\n";
-
-    // Send the data
-    if (m_serialManager->Write(commandToSend)) {
-        // Clear input box only on success
-        m_cmdInput->Clear();
-    } else {
-        wxLogError("Failed to send command.");
-    }
+    wxLogMessage("TX: %s", cmd);
+    m_grbl->SendRawCommand(cmd.ToStdString());
+    m_cmdInput->Clear();
 }
 
 void MainFrame::OnGoTo(wxCommandEvent& event) {
-    if (!m_serialManager->IsOpen()) {
-        wxLogError("Not connected to any port!");
-        return;
-    }
-
     double x, y;
     if (!m_xInput->GetValue().ToDouble(&x) || !m_yInput->GetValue().ToDouble(&y)) {
-        wxLogError("Please enter valid numbers for X and Y!");
+        wxLogError("Invalid coordinates!");
         return;
     }
 
-    // Add point to visualization
     m_coordPanel->AddPoint(x, y, *wxBLUE);
-
-    // Send G-code command to move to position
-    std::string gcode = "G0 X" + std::to_string(x) + " Y" + std::to_string(y) + "\n";
     
-    wxLogMessage("TX: %s", gcode);
-    
-    if (!m_serialManager->Write(gcode)) {
-        wxLogError("Failed to send movement command.");
-    }
+    // Abstracted logic: we just say MoveTo, we don't care about "G0" or "\n"
+    m_grbl->MoveTo(x, y);
+    wxLogMessage("Moving to X:%.2f Y:%.2f", x, y);
 }

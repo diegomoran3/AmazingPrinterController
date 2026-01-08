@@ -2,8 +2,9 @@
 #define MAINFRAME_H
 
 #include <wx/wx.h>
-#include "SerialPortManager.h"
+#include <memory>
 #include "CoordinatePanel.h"
+#include "GrblController.h"
 
 class MainFrame : public wxFrame
 {
@@ -14,8 +15,11 @@ private:
     // Event Handlers
     void OnConnect(wxCommandEvent& event);
     void OnRefresh(wxCommandEvent& event);
-    void UpdatePortList();
     void OnSend(wxCommandEvent& event);
+    void OnGoTo(wxCommandEvent& event);
+
+    // Helper Methods
+    void UpdatePortList();
 
     // UI Components
     wxComboBox* m_portCombo;
@@ -31,18 +35,16 @@ private:
     wxTextCtrl* m_yInput;
     wxButton* m_gotoBtn;
 
-    // Logic
-    std::unique_ptr<SerialPortManager> m_serialManager;
+    // Logic - Replaced SerialPortManager with GrblController
+    std::unique_ptr<GrblController> m_grbl;
 
     // Event IDs
     enum {
         ID_CONNECT = 1,
         ID_REFRESH = 2,
         ID_SEND = 3,
-        ID_GOTO =4
+        ID_GOTO = 4
     };
-
-    void OnGoTo(wxCommandEvent& event);
 
     wxDECLARE_EVENT_TABLE();
 };
