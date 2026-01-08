@@ -9,7 +9,7 @@
 			<Target title="Debug">
 				<Option output="bin/Debug/AmazingPrinterController" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Debug/" />
-				<Option type="1" />
+				<Option type="0" />
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
@@ -23,7 +23,7 @@
 			<Target title="Release">
 				<Option output="bin/Release/AmazingPrinterController" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Release/" />
-				<Option type="1" />
+				<Option type="0" />
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
@@ -36,12 +36,19 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="`wx-config --cxxflags`" />
 			<Add directory="../vcpkg/installed/x64-linux/include/" />
 		</Compiler>
+		<Linker>
+			<Add option="`wx-config --libs`" />
+		</Linker>
 		<Unit filename="include/Application.h" />
+		<Unit filename="include/GRBLManager.h" />
+		<Unit filename="include/MainFrame.h" />
 		<Unit filename="include/SerialPortManager.h" />
-		<Unit filename="include/main.h" />
 		<Unit filename="src/Application.cpp" />
+		<Unit filename="src/GRBLManager.cpp" />
+		<Unit filename="src/MainFrame.cpp" />
 		<Unit filename="src/SerialPortManager.cpp" />
 		<Unit filename="src/main.cpp" />
 		<Extensions />

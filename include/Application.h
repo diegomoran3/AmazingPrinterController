@@ -18,8 +18,8 @@ class Application
     protected:
 
     private:
-		GRBLManager grblManager_;
         std::shared_ptr<SerialPortManager> _serial;
+		GRBLManager grblManager_;
 };
 
 #endif // APPLICATION_H

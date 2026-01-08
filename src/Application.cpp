@@ -62,14 +62,31 @@ int Application::run()
                     break;
                 }
 
-                _serial->Write("G0 X5 Y5\n");
-
-                std::string response = _serial->ReadLine();
-                std::cout << response << std::endl;
+                _serial->Write("G0 X10 Y10\n");
                 break;
             }
             case 3:{
                 grblManager_.InitializeMachine();
+                break;
+            }
+            case 4:{
+                if (!_serial->IsOpen()){
+                    std::cout << "\nSerial is not open\n";
+                    break;
+                }
+
+                _serial->Write("$X\n");
+                break;
+            }
+            case 5:{
+                if (!_serial->IsOpen()){
+                    std::cout << "\nSerial is not open\n";
+                    break;
+                }
+
+                _serial->Write("\x18");
+                _serial->ReadLine();
+
                 break;
             }
 
