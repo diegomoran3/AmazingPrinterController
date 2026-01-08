@@ -26,18 +26,12 @@ class SerialPortManager
         std::vector<std::string> ScanPorts();
 
         bool OpenPort(const std::string& portName, unsigned int BaudRate = 115200);
-
-        template <typename SyncReadStream, typename MutableBufferSequence>
-        void ReadWithTimeout(SyncReadStream& s, const MutableBufferSequence& buffers, const boost::asio::deadline_timer::duration_type& expiry_time);
         void ClosePort();
 
         bool IsOpen() const;
 
         bool Write(const std::string& data);
-
         bool Write(const boost::asio::const_buffer &buffer);
-
-        std::string ReadLine();
 
         void StartAsyncRead(std::function<void(const std::string&)> onLineRead);
 

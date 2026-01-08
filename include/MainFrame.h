@@ -2,10 +2,8 @@
 #define MAINFRAME_H
 
 #include <wx/wx.h>
-#include <memory>
 #include "SerialPortManager.h"
 #include "CoordinatePanel.h"
-#include <functional>
 
 class MainFrame : public wxFrame
 {

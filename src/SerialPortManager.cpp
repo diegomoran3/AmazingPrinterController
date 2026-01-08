@@ -60,30 +60,6 @@ bool SerialPortManager::OpenPort(const std::string& portName, unsigned int baudR
     }
 }
 
-template <typename SyncReadStream, typename MutableBufferSequence>
-void SerialPortManager::ReadWithTimeout(SyncReadStream& s, const MutableBufferSequence& buffers, const boost::asio::deadline_timer::duration_type& expiry_time)
-{
-    boost::optional<boost::system::error_code> timer_result;
-    boost::asio::deadline_timer timer(s.get_io_service());
-    timer.expires_from_now(expiry_time);
-    timer.async_wait([&timer_result] (const boost::system::error_code& error) { timer_result.reset(error); });
-
-    boost::optional<boost::system::error_code> read_result;
-    boost::asio::async_read(s, buffers, [&read_result] (const boost::system::error_code& error, size_t) { read_result.reset(error); });
-
-    s.get_io_service().reset();
-    while (s.get_io_service().run_one())
-    {
-        if (read_result)
-            timer.cancel();
-        else if (timer_result)
-            s.cancel();
-    }
-
-    if (*read_result)
-        throw boost::system::system_error(*read_result);
-}
-
 void SerialPortManager::ClosePort() {
     if (serial_.is_open()) serial_.close();
 }
@@ -106,17 +82,6 @@ bool SerialPortManager::Write(const boost::asio::const_buffer& buffer) {
         std::cerr << "Write error: " << e.what() << "\n";
         return false;
     }
-}
-
-std::string SerialPortManager::ReadLine() {
-    std::string line;
-    char c;
-    while (true) {
-        boost::asio::read(serial_, boost::asio::buffer(&c, 1));
-        if (c == '\n') break;
-        line += c;
-    }
-    return line;
 }
 
 void SerialPortManager::StartAsyncRead(std::function<void(const std::string&)> onLineRead) {

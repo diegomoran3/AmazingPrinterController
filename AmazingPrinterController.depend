@@ -6253,7 +6253,7 @@
 	<boost/asio/detail/push_options.hpp>
 	<boost/asio/detail/pop_options.hpp>
 
-1767846495 /home/diego/sources/AmazingPrinterController/include/SerialPortManager.h
+1767866346 /home/diego/sources/AmazingPrinterController/include/SerialPortManager.h
 	<boost/asio.hpp>
 	<boost/bind.hpp>
 	<boost/asio/deadline_timer.hpp>
@@ -6266,7 +6266,7 @@
 	<chrono>
 	<thread>
 
-1767846451 source:/home/diego/sources/AmazingPrinterController/src/SerialPortManager.cpp
+1767866256 source:/home/diego/sources/AmazingPrinterController/src/SerialPortManager.cpp
 	"SerialPortManager.h"
 
 1764864094 source:/home/diego/sources/AmazingPrinterController/src/Application.cpp
@@ -6384,12 +6384,12 @@
 	<boost/bind/arg.hpp>
 	<boost/config.hpp>
 
-1764854027 /home/diego/sources/AmazingPrinterController/include/GRBLManager.h
+1767865973 /home/diego/sources/AmazingPrinterController/include/GRBLManager.h
 	"SerialPortManager.h"
 	<boost/asio.hpp>
 	<string>
 
-1767848644 source:/home/diego/sources/AmazingPrinterController/src/GRBLManager.cpp
+1767865970 source:/home/diego/sources/AmazingPrinterController/src/GRBLManager.cpp
 	"GRBLManager.h"
 
 1754483833 /home/diego/sources/vcpkg/installed/x64-linux/include//boost/asio/deadline_timer.hpp
@@ -10769,15 +10769,13 @@
 1711874034 /usr/include/wx-3.2/wx/gtk/mdi.h
 	"wx/frame.h"
 
-1767846882 source:/home/diego/sources/AmazingPrinterController/src/MainFrame.cpp
+1767848919 source:/home/diego/sources/AmazingPrinterController/src/MainFrame.cpp
 	"MainFrame.h"
 
-1767849173 /home/diego/sources/AmazingPrinterController/include/MainFrame.h
+1767866172 /home/diego/sources/AmazingPrinterController/include/MainFrame.h
 	<wx/wx.h>
-	<memory>
 	"SerialPortManager.h"
 	"CoordinatePanel.h"
-	<functional>
 
 1767848641 source:/home/diego/sources/AmazingPrinterController/src/CoordinatePanel.cpp
 	"CoordinatePanel.h"
