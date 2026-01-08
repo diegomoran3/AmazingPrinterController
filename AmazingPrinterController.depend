@@ -10769,7 +10769,7 @@
 1711874034 /usr/include/wx-3.2/wx/gtk/mdi.h
 	"wx/frame.h"
 
-1767869098 source:/home/diego/sources/AmazingPrinterController/src/MainFrame.cpp
+1767870074 source:/home/diego/sources/AmazingPrinterController/src/MainFrame.cpp
 	"MainFrame.h"
 
 1767868523 /home/diego/sources/AmazingPrinterController/include/MainFrame.h
@@ -10792,14 +10792,17 @@
 	"wx/dcclient.h"
 	"wx/window.h"
 
-1767868609 /home/diego/sources/AmazingPrinterController/include/GrblController.h
-	"SerialPortManager.h"
-	<wx/timer.h>
+1767878456 /home/diego/sources/AmazingPrinterController/include/GrblController.h
 	<string>
+	<vector>
 	<memory>
 	<functional>
+	<thread>
+	<atomic>
+	"SerialPortManager.h"
 
-1767868881 source:/home/diego/sources/AmazingPrinterController/src/GrblController.cpp
+1767878516 source:/home/diego/sources/AmazingPrinterController/src/GrblController.cpp
 	"GrblController.h"
 	<regex>
+	<chrono>
 

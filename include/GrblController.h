@@ -1,19 +1,20 @@
 #ifndef GRBLCONTROLLER_H
 #define GRBLCONTROLLER_H
 
-#include "SerialPortManager.h"
-#include <wx/timer.h>
 #include <string>
+#include <vector>
 #include <memory>
 #include <functional>
+#include <thread>
+#include <atomic>
+#include "SerialPortManager.h"
 
-// Structure to hold parsed data
 struct GrblStatus {
     std::string state;
     double x, y, z;
 };
 
-class GrblController : public wxEvtHandler {
+class GrblController {
 public:
     using MessageCallback = std::function<void(const std::string&)>;
     using StatusCallback = std::function<void(const GrblStatus&)>;
@@ -28,25 +29,24 @@ public:
     void SendRawCommand(const std::string& command);
     void MoveTo(double x, double y);
     void SoftReset();
+    void SetupMachineAndHome();
 
-    // Callbacks
     void SetOnMessageReceived(MessageCallback callback);
     void SetOnStatusUpdate(StatusCallback callback);
-
     std::vector<std::string> GetAvailablePorts();
 
 private:
-    void OnTimer(wxTimerEvent& event);
+    void PollingThreadLoop();
     void ParseStatus(const std::string& line);
 
     std::unique_ptr<SerialPortManager> m_serial;
-    std::unique_ptr<wxTimer> m_pollTimer;
     
+    // Threading members
+    std::thread m_pollThread;
+    std::atomic<bool> m_keepPolling{false};
+
     MessageCallback m_onMessageReceived;
     StatusCallback m_onStatusUpdate;
-
-    enum { ID_POLL_TIMER = 1000 };
-    wxDECLARE_EVENT_TABLE();
 };
 
 #endif

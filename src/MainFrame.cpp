@@ -97,8 +97,8 @@ MainFrame::MainFrame()
     this->CallAfter([this, status]() {
             m_coordPanel->ClearPoints();
             m_coordPanel->AddPoint(status.x, status.y);
-        });
     });
+});
 
     UpdatePortList();
 

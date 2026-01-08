@@ -1,14 +1,9 @@
 #include "GrblController.h"
 #include <regex>
-
-wxBEGIN_EVENT_TABLE(GrblController, wxEvtHandler)
-    EVT_TIMER(ID_POLL_TIMER, GrblController::OnTimer)
-wxEND_EVENT_TABLE()
+#include <chrono>
 
 GrblController::GrblController() 
-    : m_serial(std::make_unique<SerialPortManager>()) {
-    m_pollTimer = std::make_unique<wxTimer>(this, ID_POLL_TIMER);
-}
+    : m_serial(std::make_unique<SerialPortManager>()) {}
 
 GrblController::~GrblController() {
     Disconnect();
@@ -16,34 +11,45 @@ GrblController::~GrblController() {
 
 bool GrblController::Connect(const std::string& portName, int baudRate) {
     if (m_serial->OpenPort(portName, baudRate)) {
+
+        SetupMachineAndHome();
+
         m_serial->StartAsyncRead([this](const std::string& line) {
-            // Check if it's a status report starting with '<'
             if (!line.empty() && line[0] == '<') {
                 ParseStatus(line);
-                return;
             }
             if (m_onMessageReceived) m_onMessageReceived(line);
         });
 
-        m_pollTimer->Start(50);
+        // Start the background polling thread
+        m_keepPolling = true;
+        m_pollThread = std::thread(&GrblController::PollingThreadLoop, this);
         return true;
     }
     return false;
 }
 
 void GrblController::Disconnect() {
-    m_pollTimer->Stop();
-    if (m_serial->IsOpen()) m_serial->ClosePort();
+    m_keepPolling = false;
+    if (m_pollThread.joinable()) {
+        m_pollThread.join();
+    }
+    
+    if (m_serial && m_serial->IsOpen()) {
+        m_serial->ClosePort();
+    }
 }
 
 bool GrblController::IsConnected() const {
     return m_serial && m_serial->IsOpen();
 }
 
-void GrblController::OnTimer(wxTimerEvent& event) {
-    if (IsConnected()) {
-        // The '?' character is the real-time status query in GRBL
-        m_serial->Write("?"); 
+void GrblController::PollingThreadLoop() {
+    while (m_keepPolling) {
+        if (IsConnected()) {
+            m_serial->Write("?");
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 }
 
@@ -86,6 +92,28 @@ void GrblController::SoftReset() {
     if (IsConnected()) {
         m_serial->Write("\x18"); // Ctrl+X is the GRBL soft reset char
     }
+}
+
+void GrblController::SetupMachineAndHome() {
+    SoftReset();
+
+    // 1. Enable Homing and Soft Limits
+    m_serial->Write("$22=1\n"); // Enable Homing Cycle
+    m_serial->Write("$20=1\n"); // Enable Soft Limits
+
+    // 2. Set Homing Direction to -X and -Y
+    m_serial->Write("$23=3\n");
+
+    // 3. Define the Max Travel (Soft Limit boundaries)
+    m_serial->Write("$130=400\n"); // Max X travel 400mm
+    m_serial->Write("$131=380\n"); // Max Y travel 380mm
+
+    // 4. Unlock the machine 
+    // Grbl starts in Alarm mode if homing is enabled
+    m_serial->Write("$X\n");
+
+    // 5. Start the Homing Cycle
+    m_serial->Write("$H\n");
 }
 
 void GrblController::SetOnMessageReceived(MessageCallback callback) {
