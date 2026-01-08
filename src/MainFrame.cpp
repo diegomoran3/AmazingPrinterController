@@ -6,6 +6,7 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_BUTTON(ID_REFRESH, MainFrame::OnRefresh)
     EVT_BUTTON(ID_SEND, MainFrame::OnSend)
     EVT_TEXT_ENTER(ID_SEND, MainFrame::OnSend)
+    EVT_BUTTON(ID_GOTO, MainFrame::OnGoTo)
 wxEND_EVENT_TABLE()
 
 MainFrame::MainFrame()
@@ -13,7 +14,10 @@ MainFrame::MainFrame()
       m_serialManager(std::make_unique<SerialPortManager>())
 {
     wxPanel* panel = new wxPanel(this, wxID_ANY);
-    wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* mainSizer = new wxBoxSizer(wxHORIZONTAL); 
+
+    // LEFT SIDE: Controls and Console
+    wxBoxSizer* leftSizer = new wxBoxSizer(wxVERTICAL);
 
     // --- PORT SELECTION AREA ---
     wxStaticBoxSizer* portSizer = new wxStaticBoxSizer(wxHORIZONTAL, panel, "Connection Settings");
@@ -27,6 +31,21 @@ MainFrame::MainFrame()
     portSizer->Add(m_portCombo, 1, wxALL | wxALIGN_CENTER_VERTICAL, 5);
     portSizer->Add(m_refreshBtn, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
     portSizer->Add(m_connectBtn, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+
+    // --- COORDINATE INPUT AREA --- 
+    wxStaticBoxSizer* coordInputSizer = new wxStaticBoxSizer(wxHORIZONTAL, panel, "Go To Position");
+    
+    m_xInput = new wxTextCtrl(coordInputSizer->GetStaticBox(), wxID_ANY, "0");
+    m_yInput = new wxTextCtrl(coordInputSizer->GetStaticBox(), wxID_ANY, "0");
+    m_gotoBtn = new wxButton(coordInputSizer->GetStaticBox(), ID_GOTO, "Go To");
+    
+    coordInputSizer->Add(new wxStaticText(coordInputSizer->GetStaticBox(), wxID_ANY, "X:"), 
+                         0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 5);
+    coordInputSizer->Add(m_xInput, 1, wxALL, 5);
+    coordInputSizer->Add(new wxStaticText(coordInputSizer->GetStaticBox(), wxID_ANY, "Y:"), 
+                         0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 5);
+    coordInputSizer->Add(m_yInput, 1, wxALL, 5);
+    coordInputSizer->Add(m_gotoBtn, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 
     // --- LOG AREA ---
     m_logCtrl = new wxTextCtrl(panel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize,
@@ -46,11 +65,24 @@ MainFrame::MainFrame()
     cmdSizer->Add(m_cmdInput, 1, wxEXPAND | wxRIGHT, 5);
     cmdSizer->Add(m_sendBtn, 0, wxEXPAND);
 
-    // Combine everything
-    mainSizer->Add(portSizer, 0, wxEXPAND | wxALL, 10);
-    mainSizer->Add(new wxStaticText(panel, wxID_ANY, "Console Output:"), 0, wxLEFT, 10);
-    mainSizer->Add(m_logCtrl, 1, wxEXPAND | wxALL, 10);
-    mainSizer->Add(cmdSizer, 0, wxEXPAND | wxALL, 10);
+    // Combine left side
+    leftSizer->Add(portSizer, 0, wxEXPAND | wxALL, 5);
+    leftSizer->Add(coordInputSizer, 0, wxEXPAND | wxALL, 5);  // NEW
+    leftSizer->Add(new wxStaticText(panel, wxID_ANY, "Console Output:"), 0, wxLEFT | wxTOP, 5);
+    leftSizer->Add(m_logCtrl, 1, wxEXPAND | wxALL, 5);
+    leftSizer->Add(cmdSizer, 0, wxEXPAND | wxALL, 5);
+
+    // RIGHT SIDE: Coordinate Panel
+    wxBoxSizer* rightSizer = new wxBoxSizer(wxVERTICAL);
+    rightSizer->Add(new wxStaticText(panel, wxID_ANY, "Coordinate System:"), 0, wxLEFT | wxTOP, 10);
+    
+    m_coordPanel = new CoordinatePanel(panel);
+    m_coordPanel->SetMinSize(wxSize(400, 400));  // Minimum size for visibility
+    rightSizer->Add(m_coordPanel, 1, wxEXPAND | wxALL, 10);
+
+    // Combine left and right
+    mainSizer->Add(leftSizer, 1, wxEXPAND);
+    mainSizer->Add(rightSizer, 1, wxEXPAND);
 
     panel->SetSizer(mainSizer);
 
@@ -140,5 +172,30 @@ void MainFrame::OnSend(wxCommandEvent& event) {
         m_cmdInput->Clear();
     } else {
         wxLogError("Failed to send command.");
+    }
+}
+
+void MainFrame::OnGoTo(wxCommandEvent& event) {
+    if (!m_serialManager->IsOpen()) {
+        wxLogError("Not connected to any port!");
+        return;
+    }
+
+    double x, y;
+    if (!m_xInput->GetValue().ToDouble(&x) || !m_yInput->GetValue().ToDouble(&y)) {
+        wxLogError("Please enter valid numbers for X and Y!");
+        return;
+    }
+
+    // Add point to visualization
+    m_coordPanel->AddPoint(x, y, *wxBLUE);
+
+    // Send G-code command to move to position
+    std::string gcode = "G0 X" + std::to_string(x) + " Y" + std::to_string(y) + "\n";
+    
+    wxLogMessage("TX: %s", gcode);
+    
+    if (!m_serialManager->Write(gcode)) {
+        wxLogError("Failed to send movement command.");
     }
 }

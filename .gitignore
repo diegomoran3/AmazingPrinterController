@@ -25519,3 +25519,4 @@ vcpkg_installed/x64-linux/tools/wxwidgets/wx-config
 vcpkg_installed/x64-linux/tools/wxwidgets/wxrc
 vcpkg_installed/x64-linux/tools/wxwidgets/wxrc-3.3
 vcpkg_installed/x64-linux/tools/wxwidgets/debug/wx-config
+obj/Debug/src/CoordinatePanel.o
