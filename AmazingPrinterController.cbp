@@ -42,12 +42,12 @@
 		<Linker>
 			<Add option="`wx-config --libs`" />
 		</Linker>
-		<Unit filename="include/Application.h" />
-		<Unit filename="include/GRBLManager.h" />
+		<Unit filename="include/CoordinatePanel.h" />
+		<Unit filename="include/GrblController.h" />
 		<Unit filename="include/MainFrame.h" />
 		<Unit filename="include/SerialPortManager.h" />
-		<Unit filename="src/Application.cpp" />
-		<Unit filename="src/GRBLManager.cpp" />
+		<Unit filename="src/CoordinatePanel.cpp" />
+		<Unit filename="src/GrblController.cpp" />
 		<Unit filename="src/MainFrame.cpp" />
 		<Unit filename="src/SerialPortManager.cpp" />
 		<Unit filename="src/main.cpp" />

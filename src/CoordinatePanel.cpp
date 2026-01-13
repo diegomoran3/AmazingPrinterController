@@ -1,13 +1,38 @@
 #include "CoordinatePanel.h"
 #include <cmath>
+#include <wx/dcbuffer.h>
 
 CoordinatePanel::CoordinatePanel(wxWindow* parent) : wxPanel(parent) {
     SetBackgroundStyle(wxBG_STYLE_PAINT);
+    
+    // Set the requested window size
+    SetMinSize(wxSize(400, 380));
+    SetSize(wxSize(400, 380));
+
     Bind(wxEVT_PAINT, &CoordinatePanel::OnPaint, this);
     
-    // Set up coordinate system bounds
-    minX = -5.0; maxX = 5.0;
-    minY = -5.0; maxY = 5.0;
+    // Set coordinate system to match requested range
+    minX = 0.0; maxX = 400.0;
+    minY = 0.0; maxY = 380.0;
+}
+
+wxPoint CoordinatePanel::CoordToScreen(double x, double y) {
+    wxSize size = GetClientSize();
+    
+    // Margins to allow space for axis labels
+    int marginLeft = 45;
+    int marginBottom = 35;
+    int marginRight = 20;
+    int marginTop = 20;
+    
+    int drawableWidth = size.x - marginLeft - marginRight;
+    int drawableHeight = size.y - marginBottom - marginTop;
+
+    // Linear transformation: (value / range) * pixel_width
+    int screenX = marginLeft + ((x - minX) / (maxX - minX)) * drawableWidth;
+    int screenY = (size.y - marginBottom) - ((y - minY) / (maxY - minY)) * drawableHeight;
+    
+    return wxPoint(screenX, screenY);
 }
 
 void CoordinatePanel::AddPoint(double x, double y, wxColour color) {
@@ -20,79 +45,63 @@ void CoordinatePanel::ClearPoints() {
     Refresh();
 }
 
-wxPoint CoordinatePanel::CoordToScreen(double x, double y) {
-    wxSize size = GetClientSize();
-    int margin = 40;
-    
-    int screenX = margin + (x - minX) / (maxX - minX) * (size.x - 2 * margin);
-    int screenY = size.y - margin - (y - minY) / (maxY - minY) * (size.y - 2 * margin);
-    
-    return wxPoint(screenX, screenY);
-}
-
 void CoordinatePanel::OnPaint(wxPaintEvent& evt) {
     wxAutoBufferedPaintDC dc(this);
     dc.Clear();
     
-    wxSize size = GetClientSize();
-    int margin = 40;
+    // Draw Grid Lines every 50 units
+    dc.SetPen(wxPen(wxColour(230, 230, 230), 1));
+    int step = 50;
+
+    for (int i = (int)minX; i <= (int)maxX; i += step) {
+        dc.DrawLine(CoordToScreen(i, minY), CoordToScreen(i, maxY));
+    }
+    for (int i = (int)minY; i <= (int)maxY; i += step) {
+        dc.DrawLine(CoordToScreen(minX, i), CoordToScreen(maxX, i));
+    }
     
-    // Draw axes
+    // Draw Main Axes
     dc.SetPen(wxPen(*wxBLACK, 2));
     wxPoint origin = CoordToScreen(0, 0);
     wxPoint xEnd = CoordToScreen(maxX, 0);
     wxPoint yEnd = CoordToScreen(0, maxY);
-    wxPoint xStart = CoordToScreen(minX, 0);
-    wxPoint yStart = CoordToScreen(0, minY);
     
-    // X-axis
-    dc.DrawLine(xStart, origin);
     dc.DrawLine(origin, xEnd);
-    // Y-axis
-    dc.DrawLine(yStart, origin);
     dc.DrawLine(origin, yEnd);
     
-    // Draw grid lines
-    dc.SetPen(wxPen(wxColour(200, 200, 200), 1));
-    for (int i = std::ceil(minX); i <= std::floor(maxX); i++) {
-        if (i == 0) continue;
-        wxPoint p1 = CoordToScreen(i, minY);
-        wxPoint p2 = CoordToScreen(i, maxY);
-        dc.DrawLine(p1, p2);
-    }
-    for (int i = std::ceil(minY); i <= std::floor(maxY); i++) {
-        if (i == 0) continue;
-        wxPoint p1 = CoordToScreen(minX, i);
-        wxPoint p2 = CoordToScreen(maxX, i);
-        dc.DrawLine(p1, p2);
-    }
-    
-    // Draw axis labels
+    // Axis Labels
     dc.SetTextForeground(*wxBLACK);
     wxFont font = dc.GetFont();
-    font.SetPointSize(8);
+    font.SetPointSize(7);
     dc.SetFont(font);
     
-    for (int i = std::ceil(minX); i <= std::floor(maxX); i++) {
+    // X-axis numbers
+    for (int i = (int)minX; i <= (int)maxX; i += step) {
         wxPoint p = CoordToScreen(i, 0);
-        dc.DrawText(wxString::Format("%d", i), p.x - 5, p.y + 5);
-    }
-    for (int i = std::ceil(minY); i <= std::floor(maxY); i++) {
-        if (i == 0) continue;
-        wxPoint p = CoordToScreen(0, i);
-        dc.DrawText(wxString::Format("%d", i), p.x + 5, p.y - 5);
+        dc.DrawText(wxString::Format("%d", i), p.x - 10, p.y + 5);
     }
     
-    // Draw points
+    // Y-axis numbers
+    for (int i = (int)minY; i <= (int)maxY; i += step) {
+        if (i == 0) continue; 
+        wxPoint p = CoordToScreen(0, i);
+        dc.DrawText(wxString::Format("%d", i), p.x - 35, p.y - 7);
+    }
+    
+    // Draw Points
     for (const auto& pt : points) {
         wxPoint screenPt = CoordToScreen(pt.x, pt.y);
-        dc.SetBrush(wxBrush(pt.color));
-        dc.SetPen(wxPen(pt.color, 2));
-        dc.DrawCircle(screenPt, 5);
         
-        // Draw coordinates label
-        dc.SetTextForeground(pt.color);
-        dc.DrawText(wxString::Format("(%.1f, %.1f)", pt.x, pt.y), 
-                   screenPt.x + 8, screenPt.y - 8);
+        // Only draw if within visible range
+        if (screenPt.x >= 0 && screenPt.y >= 0) {
+            dc.SetBrush(wxBrush(pt.color));
+            dc.SetPen(wxPen(pt.color, 1));
+            dc.DrawCircle(screenPt, 3);
+            
+            // Optional: coordinate label
+            dc.SetTextForeground(pt.color);
+            dc.DrawText(wxString::Format("(%.0f,%.0f)", pt.x, pt.y), 
+                       screenPt.x + 5, screenPt.y - 12);
+        }
     }
 }

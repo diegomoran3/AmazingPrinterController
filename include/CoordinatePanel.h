@@ -2,26 +2,27 @@
 #define COORDINATEPANEL_H
 
 #include <wx/wx.h>
-#include <wx/dcbuffer.h>
 #include <vector>
 
-struct Point2D {
-    double x, y;
+struct DataPoint {
+    double x;
+    double y;
     wxColour color;
 };
 
 class CoordinatePanel : public wxPanel {
 public:
     CoordinatePanel(wxWindow* parent);
+
     void AddPoint(double x, double y, wxColour color = *wxRED);
     void ClearPoints();
 
 private:
-    std::vector<Point2D> points;
-    double minX, maxX, minY, maxY;
-
-    wxPoint CoordToScreen(double x, double y);
     void OnPaint(wxPaintEvent& evt);
+    wxPoint CoordToScreen(double x, double y);
+
+    double minX, maxX, minY, maxY;
+    std::vector<DataPoint> points;
 };
 
-#endif // COORDINATEPANEL_H
+#endif

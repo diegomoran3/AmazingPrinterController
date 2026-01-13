@@ -17,6 +17,7 @@ bool GrblController::Connect(const std::string& portName, int baudRate) {
         m_serial->StartAsyncRead([this](const std::string& line) {
             if (!line.empty() && line[0] == '<') {
                 ParseStatus(line);
+                return;
             }
             if (m_onMessageReceived) m_onMessageReceived(line);
         });
@@ -49,7 +50,7 @@ void GrblController::PollingThreadLoop() {
         if (IsConnected()) {
             m_serial->Write("?");
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
 
@@ -88,15 +89,7 @@ void GrblController::SendRawCommand(const std::string& command) {
     }
 }
 
-void GrblController::SoftReset() {
-    if (IsConnected()) {
-        m_serial->Write("\x18"); // Ctrl+X is the GRBL soft reset char
-    }
-}
-
 void GrblController::SetupMachineAndHome() {
-    SoftReset();
-
     // 1. Enable Homing and Soft Limits
     m_serial->Write("$22=1\n"); // Enable Homing Cycle
     m_serial->Write("$20=1\n"); // Enable Soft Limits

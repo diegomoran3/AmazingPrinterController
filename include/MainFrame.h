@@ -1,6 +1,9 @@
 #ifndef MAINFRAME_H
 #define MAINFRAME_H
 
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+#include <boost/bind.hpp>
+
 #include <wx/wx.h>
 #include <memory>
 #include "CoordinatePanel.h"
@@ -12,6 +15,18 @@ public:
     MainFrame();
 
 private:
+    // Helper methods for UI construction
+    wxSizer* CreateLeftColumn(wxPanel* parent);
+    wxSizer* CreateRightColumn(wxPanel* parent);
+    
+    // Sub-components of the Left Column
+    wxSizer* CreateConnectionBox(wxPanel* parent);
+    wxSizer* CreateMotionBox(wxPanel* parent);
+    void     SetupLogArea(wxPanel* parent, wxBoxSizer* mainVerticalSizer); // Adds directly to sizer
+    
+    // Logic setup
+    void SetupGrblCallbacks();
+
     // Event Handlers
     void OnConnect(wxCommandEvent& event);
     void OnRefresh(wxCommandEvent& event);

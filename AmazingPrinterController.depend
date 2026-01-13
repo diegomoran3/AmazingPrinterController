@@ -6253,7 +6253,7 @@
 	<boost/asio/detail/push_options.hpp>
 	<boost/asio/detail/pop_options.hpp>
 
-1767866346 /home/diego/sources/AmazingPrinterController/include/SerialPortManager.h
+1768328210 /home/diego/sources/AmazingPrinterController/include/SerialPortManager.h
 	<boost/asio.hpp>
 	<boost/bind.hpp>
 	<boost/asio/deadline_timer.hpp>
@@ -6266,7 +6266,7 @@
 	<chrono>
 	<thread>
 
-1767867703 source:/home/diego/sources/AmazingPrinterController/src/SerialPortManager.cpp
+1768329755 source:/home/diego/sources/AmazingPrinterController/src/SerialPortManager.cpp
 	"SerialPortManager.h"
 
 1764864094 source:/home/diego/sources/AmazingPrinterController/src/Application.cpp
@@ -10769,22 +10769,23 @@
 1711874034 /usr/include/wx-3.2/wx/gtk/mdi.h
 	"wx/frame.h"
 
-1767870074 source:/home/diego/sources/AmazingPrinterController/src/MainFrame.cpp
+1767885680 source:/home/diego/sources/AmazingPrinterController/src/MainFrame.cpp
 	"MainFrame.h"
 
-1767868523 /home/diego/sources/AmazingPrinterController/include/MainFrame.h
+1768331011 /home/diego/sources/AmazingPrinterController/include/MainFrame.h
+	<boost/bind.hpp>
 	<wx/wx.h>
 	<memory>
 	"CoordinatePanel.h"
 	"GrblController.h"
 
-1767848641 source:/home/diego/sources/AmazingPrinterController/src/CoordinatePanel.cpp
+1767893484 source:/home/diego/sources/AmazingPrinterController/src/CoordinatePanel.cpp
 	"CoordinatePanel.h"
 	<cmath>
-
-1767848982 /home/diego/sources/AmazingPrinterController/include/CoordinatePanel.h
-	<wx/wx.h>
 	<wx/dcbuffer.h>
+
+1767893378 /home/diego/sources/AmazingPrinterController/include/CoordinatePanel.h
+	<wx/wx.h>
 	<vector>
 
 1711874034 /usr/include/wx-3.2/wx/dcbuffer.h
@@ -10792,7 +10793,7 @@
 	"wx/dcclient.h"
 	"wx/window.h"
 
-1767878456 /home/diego/sources/AmazingPrinterController/include/GrblController.h
+1768329755 /home/diego/sources/AmazingPrinterController/include/GrblController.h
 	<string>
 	<vector>
 	<memory>
@@ -10801,7 +10802,7 @@
 	<atomic>
 	"SerialPortManager.h"
 
-1767878516 source:/home/diego/sources/AmazingPrinterController/src/GrblController.cpp
+1768330141 source:/home/diego/sources/AmazingPrinterController/src/GrblController.cpp
 	"GrblController.h"
 	<regex>
 	<chrono>

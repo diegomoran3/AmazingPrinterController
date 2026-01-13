@@ -14,6 +14,13 @@ struct GrblStatus {
     double x, y, z;
 };
 
+namespace Grbl {
+    const std::string SoftReset    = "\x18";
+    const std::string StatusQuery  = "?";
+    const std::string FeedHold     = "!";
+    const std::string CycleStart   = "~";
+}
+
 class GrblController {
 public:
     using MessageCallback = std::function<void(const std::string&)>;
@@ -28,7 +35,6 @@ public:
 
     void SendRawCommand(const std::string& command);
     void MoveTo(double x, double y);
-    void SoftReset();
     void SetupMachineAndHome();
 
     void SetOnMessageReceived(MessageCallback callback);
