@@ -48,7 +48,7 @@ bool GrblController::IsConnected() const {
 void GrblController::PollingThreadLoop() {
     while (m_keepPolling) {
         if (IsConnected()) {
-            m_serial->Write("?");
+            m_serial->Write(Grbl::StatusQuery);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
@@ -80,9 +80,24 @@ void GrblController::MoveTo(double x, double y) {
     SendRawCommand(gcode);
 }
 
+void GrblController::SendCommand(const std::string& command) {
+    if (IsConnected()) {
+        std::string formatted = command;
+        if (formatted.back() != '\n') {
+            formatted += "\n";
+        }
+        m_serial->Write(formatted);
+    }
+}
+
+void GrblController::SendRealtimeCommand(const std::string& command) {
+    if (IsConnected()) {
+        m_serial->Write(command);
+    }
+}
+
 void GrblController::SendRawCommand(const std::string& command) {
     if (IsConnected()) {
-        // Ensure command ends with newline for GRBL
         std::string formatted = command;
         if (formatted.back() != '\n') formatted += "\n";
         m_serial->Write(formatted);
@@ -100,13 +115,6 @@ void GrblController::SetupMachineAndHome() {
     // 3. Define the Max Travel (Soft Limit boundaries)
     m_serial->Write("$130=400\n"); // Max X travel 400mm
     m_serial->Write("$131=380\n"); // Max Y travel 380mm
-
-    // 4. Unlock the machine 
-    // Grbl starts in Alarm mode if homing is enabled
-    m_serial->Write("$X\n");
-
-    // 5. Start the Homing Cycle
-    m_serial->Write("$H\n");
 }
 
 void GrblController::SetOnMessageReceived(MessageCallback callback) {

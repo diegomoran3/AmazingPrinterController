@@ -7,59 +7,68 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_BUTTON(ID_SEND, MainFrame::OnSend)
     EVT_TEXT_ENTER(ID_SEND, MainFrame::OnSend)
     EVT_BUTTON(ID_GOTO, MainFrame::OnGoTo)
+    EVT_BUTTON(ID_HOME, MainFrame::OnHome)
+    EVT_BUTTON(ID_UNLOCK, MainFrame::OnUnlock)
+    EVT_BUTTON(ID_PAUSE, MainFrame::OnPause)
+    EVT_BUTTON(ID_RESUME, MainFrame::OnResume)
+    EVT_BUTTON(ID_RESET, MainFrame::OnReset)
 wxEND_EVENT_TABLE()
 
 MainFrame::MainFrame()
     : wxFrame(NULL, wxID_ANY, "Amazing Printer Controller", wxDefaultPosition, wxSize(600, 500)),
       m_grbl(std::make_unique<GrblController>())
 {
-// 1. Create Main Container
-    wxPanel* panel = new wxPanel(this, wxID_ANY);
-    wxBoxSizer* mainSizer = new wxBoxSizer(wxHORIZONTAL);
+    // 1. Create the Splitter Window as the main child of the Frame
+    m_splitter = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_LIVE_UPDATE | wxSP_3D);
 
-    // 2. Build Columns
-    wxSizer* leftSizer = CreateLeftColumn(panel);
-    wxSizer* rightSizer = CreateRightColumn(panel);
+    // 2. Create the Left and Right panels as children of the Splitter
+    m_leftPanel = new wxPanel(m_splitter);
+    m_rightPanel = new wxPanel(m_splitter);
 
-    // 3. Assemble Layout
-    mainSizer->Add(leftSizer, 0, wxEXPAND | wxALL, 5); // Fixed width controls
-    mainSizer->Add(rightSizer, 1, wxEXPAND | wxALL, 5); // Expanding visual area
-    panel->SetSizer(mainSizer);
+    // 3. Build the internals of each panel
+    BuildLeftPanel(m_leftPanel);
+    BuildRightPanel(m_rightPanel);
 
-    // 4. Setup Logic
+    // 4. Configure the Splitter
+    m_splitter->SetMinimumPaneSize(200); // Prevent dragging too far
+    m_splitter->SplitVertically(m_leftPanel, m_rightPanel, 350); // 350px is the initial position of the divider
+
+    // 5. Logic Setup (Same as before)
     SetupGrblCallbacks();
     UpdatePortList();
-
     Centre();
 }
 
-wxSizer* MainFrame::CreateLeftColumn(wxPanel* parent)
+void MainFrame::BuildLeftPanel(wxPanel* parent)
 {
-    wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* leftSizer = new wxBoxSizer(wxVERTICAL);
 
-    // Add modular components
-    sizer->Add(CreateConnectionBox(parent), 0, wxEXPAND | wxALL, 5);
-    sizer->Add(CreateMotionBox(parent), 0, wxEXPAND | wxALL, 5);
+    // Use the specific 'parent' (m_leftPanel) for controls
+    leftSizer->Add(CreateConnectionBox(parent), 0, wxEXPAND | wxALL, 5);
+    leftSizer->Add(CreateControlBox(parent), 0, wxEXPAND | wxALL, 5);
+    leftSizer->Add(CreateMotionBox(parent), 0, wxEXPAND | wxALL, 5);
     
-    // Setup Log Area adds multiple items (label, textctrl, input), 
-    // so we pass the sizer to it to fill.
-    SetupLogArea(parent, sizer);
+    // Add your Manual Controls here if you kept them
+    // leftSizer->Add(CreateManualBox(parent), ...);
 
-    return sizer;
+    SetupLogArea(parent, leftSizer);
+
+    parent->SetSizer(leftSizer); // Critical: Set the sizer for this specific panel
 }
 
-wxSizer* MainFrame::CreateRightColumn(wxPanel* parent)
+void MainFrame::BuildRightPanel(wxPanel* parent)
 {
-    wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
-    
-    sizer->Add(new wxStaticText(parent, wxID_ANY, "Coordinate System:"), 0, wxLEFT | wxTOP, 10);
+    wxBoxSizer* rightSizer = new wxBoxSizer(wxVERTICAL);
 
+    rightSizer->Add(new wxStaticText(parent, wxID_ANY, "Coordinate System:"), 0, wxLEFT | wxTOP, 10);
+
+    // CoordinatePanel now lives inside the right panel
     m_coordPanel = new CoordinatePanel(parent);
     m_coordPanel->SetMinSize(wxSize(400, 400));
     
-    sizer->Add(m_coordPanel, 1, wxEXPAND | wxALL, 10);
+    rightSizer->Add(m_coordPanel, 1, wxEXPAND | wxALL, 10);
 
-    return sizer;
+    parent->SetSizer(rightSizer); // Critical: Set the sizer for this specific panel
 }
 
 wxSizer* MainFrame::CreateConnectionBox(wxPanel* parent)
@@ -76,6 +85,36 @@ wxSizer* MainFrame::CreateConnectionBox(wxPanel* parent)
     portSizer->Add(m_connectBtn, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 
     return portSizer;
+}
+
+wxSizer* MainFrame::CreateControlBox(wxPanel* parent)
+{
+    wxStaticBoxSizer* boxSizer = new wxStaticBoxSizer(wxVERTICAL, parent, "Machine Control");
+    
+    // Create a Grid Sizer: 2 columns, 5px gap between items
+    wxGridSizer* grid = new wxGridSizer(2, 5, 5);
+
+    // 1. Setup & Recovery
+    grid->Add(new wxButton(boxSizer->GetStaticBox(), ID_HOME, "Home ($H)"), 1, wxEXPAND);
+    grid->Add(new wxButton(boxSizer->GetStaticBox(), ID_UNLOCK, "Unlock ($X)"), 1, wxEXPAND);
+
+    // 2. Flow Control
+    grid->Add(new wxButton(boxSizer->GetStaticBox(), ID_PAUSE, "Hold (!)"), 1, wxEXPAND);
+    grid->Add(new wxButton(boxSizer->GetStaticBox(), ID_RESUME, "Resume (~)"), 1, wxEXPAND);
+    
+    // 3. Emergency Stop (Full Width)
+    wxButton* stopBtn = new wxButton(boxSizer->GetStaticBox(), ID_RESET, "SOFT RESET");
+
+    stopBtn->SetBackgroundColour(wxColour(200, 50, 50)); // Red warning color
+    stopBtn->SetForegroundColour(*wxWHITE);
+    
+    // Add grid to the static box
+    boxSizer->Add(grid, 1, wxEXPAND | wxALL, 5);
+    
+    // Add Stop button separately at the bottom
+    boxSizer->Add(stopBtn, 0, wxEXPAND | wxALL, 5);
+
+    return boxSizer;
 }
 
 wxSizer* MainFrame::CreateMotionBox(wxPanel* parent)
@@ -176,7 +215,7 @@ void MainFrame::OnSend(wxCommandEvent& event) {
     if (cmd.IsEmpty()) return;
 
     wxLogMessage("TX: %s", cmd);
-    m_grbl->SendRawCommand(cmd.ToStdString());
+    m_grbl->SendCommand(cmd.ToStdString());
     m_cmdInput->Clear();
 }
 
@@ -190,4 +229,39 @@ void MainFrame::OnGoTo(wxCommandEvent& event) {
     // Abstracted logic: we just say MoveTo, we don't care about "G0" or "\n"
     m_grbl->MoveTo(x, y);
     wxLogMessage("Moving to X:%.2f Y:%.2f", x, y);
+}
+
+void MainFrame::OnHome(wxCommandEvent& event) {
+    if(m_grbl && m_grbl->IsConnected()) {
+        m_grbl->SendCommand(Grbl::Home); 
+        wxLogMessage("Sent Homing Command ($H)");
+    }
+}
+
+void MainFrame::OnUnlock(wxCommandEvent& event) {
+    if(m_grbl && m_grbl->IsConnected()) {
+        m_grbl->SendCommand(Grbl::Unlock);
+        wxLogMessage("Sent Unlock Command ($X)");
+    }
+}
+
+void MainFrame::OnPause(wxCommandEvent& event) {
+    if(m_grbl && m_grbl->IsConnected()) {
+        m_grbl->SendRealtimeCommand(Grbl::FeedHold); 
+        wxLogMessage("Sent Feed Hold (!)");
+    }
+}
+
+void MainFrame::OnResume(wxCommandEvent& event) {
+    if(m_grbl && m_grbl->IsConnected()) {
+        m_grbl->SendRealtimeCommand(Grbl::CycleStart); 
+        wxLogMessage("Sent Cycle Start (~)");
+    }
+}
+
+void MainFrame::OnReset(wxCommandEvent& event) {
+    if(m_grbl && m_grbl->IsConnected()) {
+        m_grbl->SendRealtimeCommand(Grbl::SoftReset);
+        wxLogMessage("Soft Reset Sent!");
+    }
 }

@@ -19,6 +19,8 @@ namespace Grbl {
     const std::string StatusQuery  = "?";
     const std::string FeedHold     = "!";
     const std::string CycleStart   = "~";
+    const std::string Unlock       = "$X";
+    const std::string Home         = "$H";
 }
 
 class GrblController {
@@ -35,6 +37,8 @@ public:
 
     void SendRawCommand(const std::string& command);
     void MoveTo(double x, double y);
+    void SendCommand(const std::string &command);
+    void SendRealtimeCommand(const std::string &command);
     void SetupMachineAndHome();
 
     void SetOnMessageReceived(MessageCallback callback);
