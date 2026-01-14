@@ -12,8 +12,6 @@ GrblController::~GrblController() {
 bool GrblController::Connect(const std::string& portName, int baudRate) {
     if (m_serial->OpenPort(portName, baudRate)) {
 
-        SetupMachineAndHome();
-
         m_serial->StartAsyncRead([this](const std::string& line) {
             if (!line.empty() && line[0] == '<') {
                 ParseStatus(line);
@@ -52,6 +50,28 @@ void GrblController::PollingThreadLoop() {
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
+}
+
+bool GrblController::ParseSetting(const std::string& line) {
+    // Check if it is a setting line like $100=250.000
+    if (line.empty() || line[0] != '$') return false;
+    
+    size_t eqPos = line.find('=');
+    if (eqPos == std::string::npos) return false;
+
+    // Extract ID ($100) and Value (250.000)
+    std::string id = line.substr(0, eqPos);
+    std::string val = line.substr(eqPos + 1);
+    
+    // Clean up comments if any (remove text after '(' )
+    size_t commentPos = val.find('(');
+    if (commentPos != std::string::npos) {
+        val = val.substr(0, commentPos);
+    }
+    
+    // Store in our permanent map
+    m_settings[id] = val;
+    return true;
 }
 
 void GrblController::ParseStatus(const std::string& line) {

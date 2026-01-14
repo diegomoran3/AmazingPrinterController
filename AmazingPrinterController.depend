@@ -10769,16 +10769,18 @@
 1711874034 /usr/include/wx-3.2/wx/gtk/mdi.h
 	"wx/frame.h"
 
-1768331346 source:/home/diego/sources/AmazingPrinterController/src/MainFrame.cpp
+1768351775 source:/home/diego/sources/AmazingPrinterController/src/MainFrame.cpp
 	"MainFrame.h"
 
-1768349978 /home/diego/sources/AmazingPrinterController/include/MainFrame.h
+1768350499 /home/diego/sources/AmazingPrinterController/include/MainFrame.h
 	<boost/bind.hpp>
 	<wx/wx.h>
 	<wx/splitter.h>
+	<wx/artprov.h>
 	<memory>
 	"CoordinatePanel.h"
 	"GrblController.h"
+	"GrblConfigDialog.h"
 
 1767893484 source:/home/diego/sources/AmazingPrinterController/src/CoordinatePanel.cpp
 	"CoordinatePanel.h"
@@ -10794,16 +10796,17 @@
 	"wx/dcclient.h"
 	"wx/window.h"
 
-1768349782 /home/diego/sources/AmazingPrinterController/include/GrblController.h
+1768351888 /home/diego/sources/AmazingPrinterController/include/GrblController.h
 	<string>
 	<vector>
 	<memory>
 	<functional>
 	<thread>
 	<atomic>
+	<map>
 	"SerialPortManager.h"
 
-1768349782 source:/home/diego/sources/AmazingPrinterController/src/GrblController.cpp
+1768351775 source:/home/diego/sources/AmazingPrinterController/src/GrblController.cpp
 	"GrblController.h"
 	<regex>
 	<chrono>
@@ -10815,4 +10818,38 @@
 1711874034 /usr/include/wx-3.2/wx/generic/splitter.h
 	"wx/window.h"
 	"wx/containr.h"
+
+1711874034 /usr/include/wx-3.2/wx/artprov.h
+	"wx/string.h"
+	"wx/bitmap.h"
+	"wx/icon.h"
+	"wx/iconbndl.h"
+	"wx/bmpbndl.h"
+
+1768351931 /home/diego/sources/AmazingPrinterController/include/GrblConfigDialog.h
+	<wx/wx.h>
+	<wx/grid.h>
+	"GrblController.h"
+
+1711874034 /usr/include/wx-3.2/wx/grid.h
+	"wx/generic/grid.h"
+	"wx/generic/grideditors.h"
+	"wx/generic/gridctrl.h"
+
+1711874034 /usr/include/wx-3.2/wx/generic/grid.h
+	"wx/defs.h"
+	"wx/hashmap.h"
+	"wx/scrolwin.h"
+	<iterator>
+
+1711874034 /usr/include/wx-3.2/wx/generic/grideditors.h
+	"wx/defs.h"
+	"wx/scopedptr.h"
+
+1711874034 /usr/include/wx-3.2/wx/generic/gridctrl.h
+	"wx/grid.h"
+	"wx/datetime.h"
+
+1768351829 source:/home/diego/sources/AmazingPrinterController/src/GrblConfigDialog.cpp
+	"GrblConfigDialog.h"
 

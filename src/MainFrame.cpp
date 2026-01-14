@@ -12,12 +12,22 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_BUTTON(ID_PAUSE, MainFrame::OnPause)
     EVT_BUTTON(ID_RESUME, MainFrame::OnResume)
     EVT_BUTTON(ID_RESET, MainFrame::OnReset)
+    EVT_TOOL(ID_SETTINGS_TOOL, MainFrame::OnOpenSettings)
 wxEND_EVENT_TABLE()
 
 MainFrame::MainFrame()
     : wxFrame(NULL, wxID_ANY, "Amazing Printer Controller", wxDefaultPosition, wxSize(600, 500)),
       m_grbl(std::make_unique<GrblController>())
 {
+    // --- Create Toolbar ---
+    wxToolBar* toolbar = CreateToolBar(wxTB_FLAT | wxTB_HORIZONTAL);
+    
+    // Add a Settings Tool (You can use a custom icon, here using a standard one)
+    toolbar->AddTool(ID_SETTINGS_TOOL, "GRBL Settings", 
+                     wxArtProvider::GetBitmap(wxART_LIST_VIEW, wxART_TOOLBAR));
+                     
+    toolbar->Realize();
+
     // 1. Create the Splitter Window as the main child of the Frame
     m_splitter = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_LIVE_UPDATE | wxSP_3D);
 
@@ -167,6 +177,13 @@ void MainFrame::SetupGrblCallbacks()
     m_grbl->SetOnMessageReceived([this](const std::string& line) {
         this->CallAfter([this, line]() {
             wxLogMessage("RX: %s", line);
+
+        bool isSetting = m_grbl->ParseSetting(line);
+
+        // 2. ONLY update the window if it is actually open
+        if (isSetting && m_configDlg) {
+            m_configDlg->ReloadGrid(); 
+        }
         });
     });
 
@@ -184,6 +201,25 @@ void MainFrame::UpdatePortList() {
     for (const auto& port : ports) m_portCombo->Append(port);
 
     if (!ports.empty()) m_portCombo->SetSelection(0);
+}
+
+void MainFrame::OnOpenSettings(wxCommandEvent& event) {
+    if (!m_grbl->IsConnected()) {
+        wxMessageBox("Please connect to the machine first.", "Error", wxICON_ERROR);
+        return;
+    }
+
+    // Create the dialog
+    GrblConfigDialog dlg(this, m_grbl.get());
+    
+    // Register it so we can feed it data
+    m_configDlg = &dlg;
+    
+    // Show it (Blocking / Modal)
+    dlg.ShowModal();
+    
+    // Cleanup after it closes
+    m_configDlg = nullptr; 
 }
 
 void MainFrame::OnRefresh(wxCommandEvent& event) {

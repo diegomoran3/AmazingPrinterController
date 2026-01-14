@@ -6,9 +6,11 @@
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
+#include <wx/artprov.h>
 #include <memory>
 #include "CoordinatePanel.h"
 #include "GrblController.h"
+#include "GrblConfigDialog.h"
 
 class MainFrame : public wxFrame
 {
@@ -16,6 +18,10 @@ public:
     MainFrame();
 
 private:
+    GrblConfigDialog* m_configDlg = nullptr; 
+
+    void OnOpenSettings(wxCommandEvent& event);
+
     // Helper methods (Updated signature to take specific parents)
     void BuildLeftPanel(wxPanel* parent);
     void BuildRightPanel(wxPanel* parent);
@@ -75,7 +81,8 @@ private:
         ID_UNLOCK = 6,
         ID_PAUSE = 7,
         ID_RESUME = 8,
-        ID_RESET = 9
+        ID_RESET = 9,
+        ID_SETTINGS_TOOL = 50
     };
 
     wxDECLARE_EVENT_TABLE();

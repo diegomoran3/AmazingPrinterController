@@ -7,6 +7,7 @@
 #include <functional>
 #include <thread>
 #include <atomic>
+#include <map>
 #include "SerialPortManager.h"
 
 struct GrblStatus {
@@ -45,11 +46,16 @@ public:
     void SetOnStatusUpdate(StatusCallback callback);
     std::vector<std::string> GetAvailablePorts();
 
+    std::map<std::string, std::string> GetSettings() const { return m_settings; }
+    bool ParseSetting(const std::string& line);
+
 private:
     void PollingThreadLoop();
     void ParseStatus(const std::string& line);
 
     std::unique_ptr<SerialPortManager> m_serial;
+
+    std::map<std::string, std::string> m_settings;
     
     // Threading members
     std::thread m_pollThread;
