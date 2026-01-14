@@ -10769,7 +10769,7 @@
 1711874034 /usr/include/wx-3.2/wx/gtk/mdi.h
 	"wx/frame.h"
 
-1768351775 source:/home/diego/sources/AmazingPrinterController/src/MainFrame.cpp
+1768353939 source:/home/diego/sources/AmazingPrinterController/src/MainFrame.cpp
 	"MainFrame.h"
 
 1768350499 /home/diego/sources/AmazingPrinterController/include/MainFrame.h
@@ -10782,14 +10782,15 @@
 	"GrblController.h"
 	"GrblConfigDialog.h"
 
-1767893484 source:/home/diego/sources/AmazingPrinterController/src/CoordinatePanel.cpp
+1768353942 source:/home/diego/sources/AmazingPrinterController/src/CoordinatePanel.cpp
 	"CoordinatePanel.h"
 	<cmath>
 	<wx/dcbuffer.h>
 
-1767893378 /home/diego/sources/AmazingPrinterController/include/CoordinatePanel.h
+1768353942 /home/diego/sources/AmazingPrinterController/include/CoordinatePanel.h
 	<wx/wx.h>
 	<vector>
+	<functional>
 
 1711874034 /usr/include/wx-3.2/wx/dcbuffer.h
 	"wx/dcmemory.h"

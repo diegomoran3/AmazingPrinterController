@@ -75,6 +75,28 @@ void MainFrame::BuildRightPanel(wxPanel* parent)
     // CoordinatePanel now lives inside the right panel
     m_coordPanel = new CoordinatePanel(parent);
     m_coordPanel->SetMinSize(wxSize(400, 400));
+
+    m_coordPanel->SetOnPointClicked([this](double x, double y) {
+        
+        // Check connection first
+        if (!m_grbl || !m_grbl->IsConnected()) {
+            wxMessageBox("Connect to machine first!", "Error", wxICON_WARNING);
+            return;
+        }
+
+        // Send Rapid Move (G0) to the clicked location
+        // Using "G90" ensures we are in Absolute Mode
+        wxString cmd = wxString::Format("G90 G0 X%.3f Y%.3f", x, y);
+        
+        m_grbl->SendCommand(cmd.ToStdString());
+        
+        wxLogMessage("Interactive Move: %s", cmd);
+        
+        // Optional: Update the "Target" dot immediately for visual feedback
+        // (The machine status update will eventually overwrite this)
+        m_coordPanel->ClearPoints();
+        m_coordPanel->AddPoint(x, y, *wxRED); 
+    });
     
     rightSizer->Add(m_coordPanel, 1, wxEXPAND | wxALL, 10);
 
