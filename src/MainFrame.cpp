@@ -253,16 +253,35 @@ void MainFrame::OnConnect(wxCommandEvent& event) {
         m_grbl->Disconnect();
         m_connectBtn->SetLabel("Connect");
         m_portCombo->Enable(true);
-        wxLogMessage("Disconnected.");
+        wxLogMessage("Disconnected.");                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
     } else {
         wxString selectedPort = m_portCombo->GetStringSelection();
-        if (m_grbl->Connect(selectedPort.ToStdString())) {
-            m_connectBtn->SetLabel("Disconnect");
-            m_portCombo->Enable(false);
-            wxLogMessage("Successfully connected to %s", selectedPort);
-        } else {
-            wxLogError("Failed to open port %s", selectedPort);
-        }
+        std::string portStd = selectedPort.ToStdString(); 
+
+        m_connectBtn->SetLabel("Connecting...");
+        m_connectBtn->Disable(); 
+        m_portCombo->Enable(false);
+
+        std::thread([this, portStd]() {
+            
+            
+            bool success = m_grbl->Connect(portStd);
+            
+            wxTheApp->CallAfter([this, success, portStd]() {
+                
+                m_connectBtn->Enable();
+
+                if (success) {
+                    m_connectBtn->SetLabel("Disconnect");
+                    wxLogMessage("Successfully connected to %s", portStd);
+                } else {
+                    m_connectBtn->SetLabel("Connect");
+                    m_portCombo->Enable(true);
+                    wxLogError("Failed to open port %s", portStd);
+                }
+            });
+
+        }).detach();
     }
 }
 

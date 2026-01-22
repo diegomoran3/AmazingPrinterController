@@ -30,7 +30,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 find_package(Boost REQUIRED COMPONENTS asio)
 if(Boost_FOUND)
-    target_link_libraries(${PROJECT_NAME} PRIVATE Boost::boost)
+    target_link_libraries(${PROJECT_NAME} PRIVATE 
+        Boost::boost
+        ${wxWidgets_LIBRARIES}
+    )
 else()
     message(FATAL_ERROR "Boost not found. Please install Boost or ensure vcpkg is set up correctly.")
 endif()

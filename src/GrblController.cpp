@@ -97,7 +97,7 @@ void GrblController::ParseStatus(const std::string& line) {
 void GrblController::MoveTo(double x, double y) {
     // GRBL move command: G0 (Rapid) or G1 (Linear)
     std::string gcode = "G0 X" + std::to_string(x) + " Y" + std::to_string(y);
-    SendRawCommand(gcode);
+    SendCommand(gcode);
 }
 
 void GrblController::SendCommand(const std::string& command) {
@@ -113,14 +113,6 @@ void GrblController::SendCommand(const std::string& command) {
 void GrblController::SendRealtimeCommand(const std::string& command) {
     if (IsConnected()) {
         m_serial->Write(command);
-    }
-}
-
-void GrblController::SendRawCommand(const std::string& command) {
-    if (IsConnected()) {
-        std::string formatted = command;
-        if (formatted.back() != '\n') formatted += "\n";
-        m_serial->Write(formatted);
     }
 }
 

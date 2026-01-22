@@ -36,7 +36,6 @@ public:
     void Disconnect();
     bool IsConnected() const;
 
-    void SendRawCommand(const std::string& command);
     void MoveTo(double x, double y);
     void SendCommand(const std::string &command);
     void SendRealtimeCommand(const std::string &command);
