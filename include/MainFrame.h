@@ -11,6 +11,7 @@
 #include "CoordinatePanel.h"
 #include "GrblController.h"
 #include "GrblConfigDialog.h"
+#include "GrblScanWindow.h"
 
 class MainFrame : public wxFrame
 {
@@ -19,8 +20,10 @@ public:
 
 private:
     GrblConfigDialog* m_configDlg = nullptr; 
+    GrblScanWindow* m_scanDlg = nullptr;
 
     void OnOpenSettings(wxCommandEvent& event);
+    void OnOpenScanSettings(wxCommandEvent& event);
 
     // Helper methods (Updated signature to take specific parents)
     void BuildLeftPanel(wxPanel* parent);
@@ -82,7 +85,8 @@ private:
         ID_PAUSE = 7,
         ID_RESUME = 8,
         ID_RESET = 9,
-        ID_SETTINGS_TOOL = 50
+        ID_SETTINGS_TOOL = 50,
+        ID_SETTINGS_SCAN = 51
     };
 
     wxDECLARE_EVENT_TABLE();

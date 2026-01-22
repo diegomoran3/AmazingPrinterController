@@ -13,6 +13,7 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_BUTTON(ID_RESUME, MainFrame::OnResume)
     EVT_BUTTON(ID_RESET, MainFrame::OnReset)
     EVT_TOOL(ID_SETTINGS_TOOL, MainFrame::OnOpenSettings)
+    EVT_TOOL(ID_SETTINGS_SCAN, MainFrame::OnOpenScanSettings)
 wxEND_EVENT_TABLE()
 
 MainFrame::MainFrame()
@@ -24,6 +25,8 @@ MainFrame::MainFrame()
     
     // Add a Settings Tool (You can use a custom icon, here using a standard one)
     toolbar->AddTool(ID_SETTINGS_TOOL, "GRBL Settings", 
+                     wxArtProvider::GetBitmap(wxART_LIST_VIEW, wxART_TOOLBAR));
+    toolbar->AddTool(ID_SETTINGS_SCAN, "Scan Settings", 
                      wxArtProvider::GetBitmap(wxART_LIST_VIEW, wxART_TOOLBAR));
                      
     toolbar->Realize();
@@ -244,6 +247,26 @@ void MainFrame::OnOpenSettings(wxCommandEvent& event) {
     m_configDlg = nullptr; 
 }
 
+void MainFrame::OnOpenScanSettings(wxCommandEvent &event)
+{
+        if (!m_grbl->IsConnected()) {
+        wxMessageBox("Please connect to the machine first.", "Error", wxICON_ERROR);
+        return;
+    }
+
+    // Create the dialog
+    GrblScanWindow dlg(this, m_grbl.get());
+    
+    // Register it so we can feed it data
+    m_scanDlg = &dlg;
+    
+    // Show it (Blocking / Modal)
+    dlg.ShowModal();
+    
+    // Cleanup after it closes
+    m_scanDlg = nullptr; 
+}
+
 void MainFrame::OnRefresh(wxCommandEvent& event) {
     UpdatePortList();
 }
@@ -264,7 +287,7 @@ void MainFrame::OnConnect(wxCommandEvent& event) {
 
         std::thread([this, portStd]() {
             
-            
+
             bool success = m_grbl->Connect(portStd);
             
             wxTheApp->CallAfter([this, success, portStd]() {

@@ -87,8 +87,7 @@ public:
     std::function<void(int, int, double, double)> onPointReached,
     Direction direction,
     double speed = 6000);
-
-    const double POS_TOLERANCE = 0.05;
+    void CancelScan();
 
     void WaitForArrival(double targetX, double targetY, double timeoutSecs = 10.0);
 
@@ -108,6 +107,9 @@ private:
     StatusCallback m_onStatusUpdate;
 
     GrblStatus m_currentStatus;
+    std::atomic<bool> m_shouldCancel{ false };
+
+    const double POS_TOLERANCE = 0.5;
 };
 
 #endif

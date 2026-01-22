@@ -48,6 +48,8 @@ void GrblController::WaitForArrival(double targetX, double targetY, double timeo
     auto startTime = std::chrono::steady_clock::now();
 
     while (true) {
+        if (m_shouldCancel) return;
+
         auto now = std::chrono::steady_clock::now();
         if (std::chrono::duration<double>(now - startTime).count() > timeoutSecs) {
             std::cerr << "Timeout waiting for position!" << std::endl;
@@ -104,26 +106,38 @@ bool GrblController::ParseSetting(const std::string& line) {
 
 void GrblController::StartScanCycle(double startX, double startY, int rows, int cols, double stepX, double stepY, std::function<void(int, int, double, double)> onPointReached, Direction direction, double feedRate)
 {
+    m_shouldCancel = false;
+
     MoveTo(startX, startY, feedRate);
     WaitForArrival(startX, startY);
 
-    for (int row = 0; row < rows; ++row) {
-        for (int col = 0; col < cols; ++col) {
-            // Calculate Zig-Zag or Raster logic here if needed
-            // Currently strict Raster (always left-to-right based on logic)
-            double targetX = startX + (direction == DIR_Horizontal ? col * stepX : row * stepX);
-            double targetY = startY + (direction == DIR_Horizontal ? row * stepY : col * stepY);
+    bool isHorizontal = (direction == DIR_Horizontal);
+    
+    int outerLimit = isHorizontal ? rows : cols;
+    int innerLimit = isHorizontal ? cols : rows;
 
-            // 2. Move to the calculated point
+    for (int i = 0; i < outerLimit; ++i) {
+        for (int j = 0; j < innerLimit; ++j) {
+            
+            if (m_shouldCancel) return;
+
+            int r = isHorizontal ? i : j;
+            int c = isHorizontal ? j : i;
+
+            double targetX = startX + (c * stepX);
+            double targetY = startY + (r * stepY);
+
             MoveTo(targetX, targetY, feedRate);
-
-            // 3. Smart Wait: Blocks until GRBL reports it is there and Idle
             WaitForArrival(targetX, targetY);
-
-            // 4. Callback to notify point reached (Perform camera capture, etc.)
-            onPointReached(row, col, targetX, targetY);
+            
+            onPointReached(r, c, targetX, targetY);
         }
     }
+}
+
+void GrblController::CancelScan()
+{
+    m_shouldCancel = true;
 }
 
 void GrblController::ParseStatus(const std::string& line) {
@@ -141,6 +155,8 @@ void GrblController::ParseStatus(const std::string& line) {
         if (firstPipe != std::string::npos) {
             status.state = ParseStateString(line.substr(1, firstPipe - 1));
         }
+
+        m_currentStatus = status;
 
         if (m_onStatusUpdate) m_onStatusUpdate(status);
     }
