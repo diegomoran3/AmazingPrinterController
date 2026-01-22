@@ -104,7 +104,7 @@ bool GrblController::ParseSetting(const std::string& line) {
     return true;
 }
 
-void GrblController::StartScanCycle(double startX, double startY, int rows, int cols, double stepX, double stepY, std::function<void(int, int, double, double)> onPointReached, Direction direction, double feedRate)
+void GrblController::StartScanCycle(double startX, double startY, int rows, int cols, double stepX, double stepY, std::function<void(int, int, double, double)> onPointReached, Direction direction, bool zigzag, double feedRate)
 {
     m_shouldCancel = false;
 
@@ -112,14 +112,18 @@ void GrblController::StartScanCycle(double startX, double startY, int rows, int 
     WaitForArrival(startX, startY);
 
     bool isHorizontal = (direction == DIR_Horizontal);
-    
     int outerLimit = isHorizontal ? rows : cols;
     int innerLimit = isHorizontal ? cols : rows;
 
     for (int i = 0; i < outerLimit; ++i) {
-        for (int j = 0; j < innerLimit; ++j) {
+        for (int k = 0; k < innerLimit; ++k) {
             
             if (m_shouldCancel) return;
+
+            int j = k;
+            if (zigzag && (i % 2 != 0)) {
+                j = (innerLimit - 1) - k; 
+            }
 
             int r = isHorizontal ? i : j;
             int c = isHorizontal ? j : i;
@@ -129,7 +133,7 @@ void GrblController::StartScanCycle(double startX, double startY, int rows, int 
 
             MoveTo(targetX, targetY, feedRate);
             WaitForArrival(targetX, targetY);
-            
+
             onPointReached(r, c, targetX, targetY);
         }
     }

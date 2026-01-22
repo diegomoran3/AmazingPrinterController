@@ -21,6 +21,7 @@ private:
     wxTextCtrl* m_txtStepY;
     wxTextCtrl* m_txtSpeed;
     wxRadioBox* m_rbDirection;
+    wxCheckBox* m_chkZigzag;
     wxButton* m_btnStart;
     wxButton* m_btnClose;
 

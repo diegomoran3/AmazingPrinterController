@@ -86,7 +86,9 @@ public:
     double stepX, double stepY, 
     std::function<void(int, int, double, double)> onPointReached,
     Direction direction,
+    bool zigzag = false,
     double speed = 6000);
+
     void CancelScan();
 
     void WaitForArrival(double targetX, double targetY, double timeoutSecs = 10.0);

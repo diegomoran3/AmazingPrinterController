@@ -40,6 +40,9 @@ GrblScanWindow::GrblScanWindow(wxWindow* parent, GrblController* controller)
     wxString choices[] = { "Horizontal", "Vertical" };
     m_rbDirection = new wxRadioBox(this, wxID_ANY, "Direction", wxDefaultPosition, wxDefaultSize, 2, choices);
 
+    m_chkZigzag = new wxCheckBox(this, wxID_ANY, "Zigzag Mode (Snake Scan)");
+    m_chkZigzag->SetValue(true); // Default to on, it's faster
+
     // 4. Buttons
     auto* btnSizer = new wxBoxSizer(wxHORIZONTAL);
     m_btnStart = new wxButton(this, ID_BTN_START, "Start Scan");
@@ -50,6 +53,7 @@ GrblScanWindow::GrblScanWindow(wxWindow* parent, GrblController* controller)
     // Layout
     mainSizer->Add(formSizer, 1, wxALL | wxEXPAND, 15);
     mainSizer->Add(m_rbDirection, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 15);
+    mainSizer->Add(m_chkZigzag, 0, wxALL | wxEXPAND, 15);
     mainSizer->Add(btnSizer, 0, wxALL | wxALIGN_RIGHT, 15);
 
     SetSizer(mainSizer);
@@ -73,6 +77,7 @@ void GrblScanWindow::ToggleControls(bool enable) {
     m_txtStepY->Enable(enable);
     m_txtSpeed->Enable(enable);
     m_rbDirection->Enable(enable);
+    m_chkZigzag->Enable(enable);
 
     if (enable) {
         m_btnStart->Enable(true);
@@ -96,6 +101,7 @@ void GrblScanWindow::OnStart(wxCommandEvent& event) {
         double stepY = std::stod(m_txtStepY->GetValue().ToStdString());
         double speed = std::stod(m_txtSpeed->GetValue().ToStdString());
         Direction dir = (m_rbDirection->GetSelection() == 0) ? DIR_Horizontal : DIR_Vertical;
+        bool zigzag = m_chkZigzag->GetValue();
         
         m_isScanning = true;
         ToggleControls(false); // Disable inputs
@@ -110,7 +116,7 @@ void GrblScanWindow::OnStart(wxCommandEvent& event) {
             // This now respects the m_shouldCancel flag
             m_controller->StartScanCycle(startX, startY, rows, cols, stepX, stepY, 
                 [](int r, int c, double x, double y) {}, 
-                dir, speed
+                dir, zigzag, speed
             );
 
             // Update UI when finished (or cancelled)
