@@ -44,6 +44,8 @@ class SerialPortManager
         char m_readChar;
         std::string m_inputBuffer;
         std::function<void(const std::string&)> m_onLineRead;
+        std::thread ioThread_;
+        boost::asio::executor_work_guard<boost::asio::io_context::executor_type> workGuard_;
 
 };
 

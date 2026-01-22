@@ -43,12 +43,40 @@ bool GrblController::IsConnected() const {
     return m_serial && m_serial->IsOpen();
 }
 
-void GrblController::PollingThreadLoop() {
+void GrblController::WaitForArrival(double targetX, double targetY, double timeoutSecs)
+{
+    auto startTime = std::chrono::steady_clock::now();
+
+    while (true) {
+        auto now = std::chrono::steady_clock::now();
+        if (std::chrono::duration<double>(now - startTime).count() > timeoutSecs) {
+            std::cerr << "Timeout waiting for position!" << std::endl;
+            break;
+        }
+
+        double dx = std::abs(m_currentStatus.x - targetX);
+        double dy = std::abs(m_currentStatus.y - targetY);
+
+        if (m_currentStatus.state == GrblState::Idle && dx < POS_TOLERANCE && dy < POS_TOLERANCE) {
+            break; 
+        }
+
+        if (m_currentStatus.state == GrblState::Alarm || m_currentStatus.state == GrblState::Unknown) {
+            std::cerr << "Error: Machine entered Alarm or Unknown state during move." << std::endl;
+            break; 
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+}
+
+void GrblController::PollingThreadLoop()
+{
     while (m_keepPolling) {
         if (IsConnected()) {
             m_serial->Write(Grbl::StatusQuery);
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 
@@ -74,6 +102,30 @@ bool GrblController::ParseSetting(const std::string& line) {
     return true;
 }
 
+void GrblController::StartScanCycle(double startX, double startY, int rows, int cols, double stepX, double stepY, std::function<void(int, int, double, double)> onPointReached, Direction direction, double feedRate)
+{
+    MoveTo(startX, startY, feedRate);
+    WaitForArrival(startX, startY);
+
+    for (int row = 0; row < rows; ++row) {
+        for (int col = 0; col < cols; ++col) {
+            // Calculate Zig-Zag or Raster logic here if needed
+            // Currently strict Raster (always left-to-right based on logic)
+            double targetX = startX + (direction == DIR_Horizontal ? col * stepX : row * stepX);
+            double targetY = startY + (direction == DIR_Horizontal ? row * stepY : col * stepY);
+
+            // 2. Move to the calculated point
+            MoveTo(targetX, targetY, feedRate);
+
+            // 3. Smart Wait: Blocks until GRBL reports it is there and Idle
+            WaitForArrival(targetX, targetY);
+
+            // 4. Callback to notify point reached (Perform camera capture, etc.)
+            onPointReached(row, col, targetX, targetY);
+        }
+    }
+}
+
 void GrblController::ParseStatus(const std::string& line) {
     std::regex posRegex("MPos:([-+]?[0-9]*\\.?[0-9]+),([-+]?[0-9]*\\.?[0-9]+),([-+]?[0-9]*\\.?[0-9]+)");
     std::smatch match;
@@ -87,7 +139,7 @@ void GrblController::ParseStatus(const std::string& line) {
         // Find state (the part between < and |)
         size_t firstPipe = line.find('|');
         if (firstPipe != std::string::npos) {
-            status.state = line.substr(1, firstPipe - 1);
+            status.state = ParseStateString(line.substr(1, firstPipe - 1));
         }
 
         if (m_onStatusUpdate) m_onStatusUpdate(status);
@@ -97,6 +149,11 @@ void GrblController::ParseStatus(const std::string& line) {
 void GrblController::MoveTo(double x, double y) {
     // GRBL move command: G0 (Rapid) or G1 (Linear)
     std::string gcode = "G0 X" + std::to_string(x) + " Y" + std::to_string(y);
+    SendCommand(gcode);
+}
+
+void GrblController::MoveTo(double x, double y, double feedRate) {
+    std::string gcode = "G1 X" + std::to_string(x) + " Y" + std::to_string(y) + " F" + std::to_string(feedRate);
     SendCommand(gcode);
 }
 

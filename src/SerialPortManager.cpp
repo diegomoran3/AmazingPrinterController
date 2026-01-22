@@ -1,11 +1,18 @@
 #include "SerialPortManager.h"
 
 SerialPortManager::SerialPortManager()
-    : serial_(ioContext_)
+    : serial_(ioContext_), 
+      workGuard_(boost::asio::make_work_guard(ioContext_))
 {}
 
 SerialPortManager::~SerialPortManager() {
     ClosePort();
+
+    ioContext_.stop();
+    
+    if (ioThread_.joinable()) {
+        ioThread_.join();
+    }
 }
 
 std::vector<std::string> SerialPortManager::ScanPorts() {
@@ -88,11 +95,11 @@ void SerialPortManager::StartAsyncRead(std::function<void(const std::string&)> o
     m_onLineRead = onLineRead;
     DoRead();
 
-    // Start the io_context in a separate thread so it doesn't block the GUI
-    std::thread([this]() {
-        auto workGuard = boost::asio::make_work_guard(ioContext_);
-        ioContext_.run();
-    }).detach();
+    if (!ioThread_.joinable()) {
+        ioThread_ = std::thread([this]() {
+            ioContext_.run();
+        });
+    }
 }
 
 void SerialPortManager::DoRead() {
