@@ -93,6 +93,11 @@ void GrblScanWindow::OnStart(wxCommandEvent& event) {
     }
 
     try {
+
+        if (m_workerThread.joinable()) {
+            m_workerThread.join();
+        }
+
         double startX = std::stod(m_txtStartX->GetValue().ToStdString());
         double startY = std::stod(m_txtStartY->GetValue().ToStdString());
         int rows = std::stoi(m_txtRows->GetValue().ToStdString());
@@ -115,7 +120,11 @@ void GrblScanWindow::OnStart(wxCommandEvent& event) {
             
             // This now respects the m_shouldCancel flag
             m_controller->StartScanCycle(startX, startY, rows, cols, stepX, stepY, 
-                [](int r, int c, double x, double y) {}, 
+                [](int r, int c, double x, double y) {
+                    //Jonathan: TODO for point reached callback
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                    printf("Reached Point R:%d C:%d at (%.2f, %.2f)\n", r, c, x, y);
+                }, 
                 dir, zigzag, speed
             );
 
