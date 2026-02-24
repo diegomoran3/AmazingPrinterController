@@ -2,18 +2,26 @@
 
 // Event Table
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
-    EVT_BUTTON(ID_CONNECT, MainFrame::OnConnect)
-    EVT_BUTTON(ID_REFRESH, MainFrame::OnRefresh)
-    EVT_BUTTON(ID_SEND, MainFrame::OnSend)
-    EVT_TEXT_ENTER(ID_SEND, MainFrame::OnSend)
-    EVT_BUTTON(ID_GOTO, MainFrame::OnGoTo)
-    EVT_BUTTON(ID_HOME, MainFrame::OnHome)
-    EVT_BUTTON(ID_UNLOCK, MainFrame::OnUnlock)
-    EVT_BUTTON(ID_PAUSE, MainFrame::OnPause)
-    EVT_BUTTON(ID_RESUME, MainFrame::OnResume)
-    EVT_BUTTON(ID_RESET, MainFrame::OnReset)
-    EVT_TOOL(ID_SETTINGS_TOOL, MainFrame::OnOpenSettings)
-    EVT_TOOL(ID_SETTINGS_SCAN, MainFrame::OnOpenScanSettings)
+    EVT_BUTTON(ID_CONNECT,          MainFrame::OnConnect)
+    EVT_BUTTON(ID_REFRESH,          MainFrame::OnRefresh)
+    EVT_BUTTON(ID_SEND,             MainFrame::OnSend)
+    EVT_TEXT_ENTER(ID_SEND,         MainFrame::OnSend)
+    EVT_BUTTON(ID_GOTO,             MainFrame::OnGoTo)
+    EVT_BUTTON(ID_HOME,             MainFrame::OnHome)
+    EVT_BUTTON(ID_UNLOCK,           MainFrame::OnUnlock)
+    EVT_BUTTON(ID_PAUSE,            MainFrame::OnPause)
+    EVT_BUTTON(ID_RESUME,           MainFrame::OnResume)
+    EVT_BUTTON(ID_RESET,            MainFrame::OnReset)
+    EVT_TOOL(ID_SETTINGS_TOOL,      MainFrame::OnOpenSettings)
+    EVT_TOOL(ID_SETTINGS_SCAN,      MainFrame::OnOpenScanSettings)
+    EVT_BUTTON(ID_JOG_UP,           MainFrame::OnJog)
+    EVT_BUTTON(ID_JOG_DOWN,         MainFrame::OnJog)
+    EVT_BUTTON(ID_JOG_LEFT,         MainFrame::OnJog)
+    EVT_BUTTON(ID_JOG_RIGHT,        MainFrame::OnJog)
+    EVT_BUTTON(ID_JOG_UP_LEFT,      MainFrame::OnJog)
+    EVT_BUTTON(ID_JOG_UP_RIGHT,     MainFrame::OnJog)
+    EVT_BUTTON(ID_JOG_DOWN_LEFT,    MainFrame::OnJog)
+    EVT_BUTTON(ID_JOG_DOWN_RIGHT,   MainFrame::OnJog)
 wxEND_EVENT_TABLE()
 
 MainFrame::MainFrame()
@@ -86,14 +94,8 @@ void MainFrame::BuildRightPanel(wxPanel* parent)
             wxMessageBox("Connect to machine first!", "Error", wxICON_WARNING);
             return;
         }
-
-        // Send Rapid Move (G0) to the clicked location
-        // Using "G90" ensures we are in Absolute Mode
-        wxString cmd = wxString::Format("G90 G0 X%.3f Y%.3f", x, y);
         
-        m_grbl->SendCommand(cmd.ToStdString());
-        
-        wxLogMessage("Interactive Move: %s", cmd);
+        m_grbl->MoveTo(x, y);
         
         // Optional: Update the "Target" dot immediately for visual feedback
         // (The machine status update will eventually overwrite this)
@@ -125,28 +127,81 @@ wxSizer* MainFrame::CreateConnectionBox(wxPanel* parent)
 wxSizer* MainFrame::CreateControlBox(wxPanel* parent)
 {
     wxStaticBoxSizer* boxSizer = new wxStaticBoxSizer(wxVERTICAL, parent, "Machine Control");
+    wxWindow* innerParent = boxSizer->GetStaticBox();
+
+    // 1. Step Size Row
+    wxBoxSizer* stepRow = new wxBoxSizer(wxHORIZONTAL);
+    stepRow->Add(new wxStaticText(innerParent, wxID_ANY, "Step:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
     
-    // Create a Grid Sizer: 2 columns, 5px gap between items
-    wxGridSizer* grid = new wxGridSizer(2, 5, 5);
-
-    // 1. Setup & Recovery
-    grid->Add(new wxButton(boxSizer->GetStaticBox(), ID_HOME, "Home ($H)"), 1, wxEXPAND);
-    grid->Add(new wxButton(boxSizer->GetStaticBox(), ID_UNLOCK, "Unlock ($X)"), 1, wxEXPAND);
-
-    // 2. Flow Control
-    grid->Add(new wxButton(boxSizer->GetStaticBox(), ID_PAUSE, "Hold (!)"), 1, wxEXPAND);
-    grid->Add(new wxButton(boxSizer->GetStaticBox(), ID_RESUME, "Resume (~)"), 1, wxEXPAND);
+    m_stepSizeCtrl = new wxSpinCtrlDouble(innerParent, wxID_ANY, "1.0", 
+                                          wxDefaultPosition, wxSize(70, -1), 
+                                          wxSP_ARROW_KEYS, 0.01, 100.0, 1.0, 0.1);
     
-    // 3. Emergency Stop (Full Width)
-    wxButton* stopBtn = new wxButton(boxSizer->GetStaticBox(), ID_RESET, "SOFT RESET");
+    stepRow->Add(m_stepSizeCtrl, 1, wxEXPAND | wxRIGHT, 5);
+    stepRow->Add(new wxStaticText(innerParent, wxID_ANY, "mm"), 0, wxALIGN_CENTER_VERTICAL);
+    boxSizer->Add(stepRow, 0, wxEXPAND | wxALL, 5);
 
-    stopBtn->SetBackgroundColour(wxColour(200, 50, 50)); // Red warning color
+    // 2. Feed Rate Row
+    wxBoxSizer* feedRow = new wxBoxSizer(wxHORIZONTAL);
+    feedRow->Add(new wxStaticText(innerParent, wxID_ANY, "Feed:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
+    
+    // min: 1, max: 5000, initial: 1000
+    m_feedRateCtrl = new wxSpinCtrl(innerParent, wxID_ANY, "1000", 
+                                     wxDefaultPosition, wxSize(70, -1), 
+                                     wxSP_ARROW_KEYS, 1, 5000, 1000);
+    
+    feedRow->Add(m_feedRateCtrl, 1, wxEXPAND | wxRIGHT, 5);
+    feedRow->Add(new wxStaticText(innerParent, wxID_ANY, "mm/min"), 0, wxALIGN_CENTER_VERTICAL);
+    boxSizer->Add(feedRow, 0, wxEXPAND | wxALL, 5);
+
+    boxSizer->Add(new wxStaticLine(innerParent), 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+    // GridBagSizer allows precise placement for the directional "cross"
+    wxGridBagSizer* jogGrid = new wxGridBagSizer(5, 5);
+
+    // 2. Directional Buttons (Y+, Y-, X-, X+)
+    wxButton* btnUp    = new wxButton(boxSizer->GetStaticBox(), ID_JOG_UP, "Y+", wxDefaultPosition, wxSize(45, 45));
+    wxButton* btnDown  = new wxButton(boxSizer->GetStaticBox(), ID_JOG_DOWN, "Y-", wxDefaultPosition, wxSize(45, 45));
+    wxButton* btnLeft  = new wxButton(boxSizer->GetStaticBox(), ID_JOG_LEFT, "X-", wxDefaultPosition, wxSize(45, 45));
+    wxButton* btnRight = new wxButton(boxSizer->GetStaticBox(), ID_JOG_RIGHT, "X+", wxDefaultPosition, wxSize(45, 45));
+
+    // Diagonal Buttons
+    wxButton* btnUpLeft    = new wxButton(innerParent, ID_JOG_UP_LEFT, "↖", wxDefaultPosition, wxSize(45, 45));
+    wxButton* btnUpRight   = new wxButton(innerParent, ID_JOG_UP_RIGHT, "↗", wxDefaultPosition, wxSize(45, 45));
+    wxButton* btnDownLeft  = new wxButton(innerParent, ID_JOG_DOWN_LEFT, "↙", wxDefaultPosition, wxSize(45, 45));
+    wxButton* btnDownRight = new wxButton(innerParent, ID_JOG_DOWN_RIGHT, "↘", wxDefaultPosition, wxSize(45, 45));
+
+    // 3. Center Home Button with Icon
+    wxBitmapButton* btnHome = new wxBitmapButton(boxSizer->GetStaticBox(), ID_HOME, 
+        wxArtProvider::GetBitmap(wxART_GO_HOME, wxART_BUTTON, wxSize(24, 24)));
+    btnHome->SetToolTip("Home ($H)");
+
+    // Position them in the corners
+    jogGrid->Add(btnUpLeft,    wxGBPosition(0, 0), wxGBSpan(1, 1), wxALIGN_CENTER);
+    jogGrid->Add(btnUp,        wxGBPosition(0, 1), wxGBSpan(1, 1), wxALIGN_CENTER);
+    jogGrid->Add(btnUpRight,   wxGBPosition(0, 2), wxGBSpan(1, 1), wxALIGN_CENTER);
+
+    jogGrid->Add(btnLeft,      wxGBPosition(1, 0), wxGBSpan(1, 1), wxALIGN_CENTER);
+    jogGrid->Add(btnHome,      wxGBPosition(1, 1), wxGBSpan(1, 1), wxALIGN_CENTER);
+    jogGrid->Add(btnRight,     wxGBPosition(1, 2), wxGBSpan(1, 1), wxALIGN_CENTER);
+
+    jogGrid->Add(btnDownLeft,  wxGBPosition(2, 0), wxGBSpan(1, 1), wxALIGN_CENTER);
+    jogGrid->Add(btnDown,      wxGBPosition(2, 1), wxGBSpan(1, 1), wxALIGN_CENTER);
+    jogGrid->Add(btnDownRight, wxGBPosition(2, 2), wxGBSpan(1, 1), wxALIGN_CENTER);
+    
+    // 3. Control Buttons (Placed to the right or below)
+    // Adding them to the right column of the same grid
+    jogGrid->Add(new wxButton(boxSizer->GetStaticBox(), ID_UNLOCK, "Unlock ($X)"), wxGBPosition(0, 3), wxGBSpan(1, 1), wxEXPAND);
+    jogGrid->Add(new wxButton(boxSizer->GetStaticBox(), ID_PAUSE, "Hold (!)"),     wxGBPosition(1, 3), wxGBSpan(1, 1), wxEXPAND);
+    jogGrid->Add(new wxButton(boxSizer->GetStaticBox(), ID_RESUME, "Resume (~)"),  wxGBPosition(2, 3), wxGBSpan(1, 1), wxEXPAND);
+
+    // 4. Emergency Stop (Full Width across all columns)
+    wxButton* stopBtn = new wxButton(boxSizer->GetStaticBox(), ID_RESET, "SOFT RESET (CTRL+X)");
+    stopBtn->SetBackgroundColour(wxColour(200, 50, 50)); 
     stopBtn->SetForegroundColour(*wxWHITE);
-    
-    // Add grid to the static box
-    boxSizer->Add(grid, 1, wxEXPAND | wxALL, 5);
-    
-    // Add Stop button separately at the bottom
+    stopBtn->SetFont(stopBtn->GetFont().Bold());
+
+    // Add elements to the main vertical boxSizer
+    boxSizer->Add(jogGrid, 0, wxALIGN_CENTER | wxALL, 10);
     boxSizer->Add(stopBtn, 0, wxEXPAND | wxALL, 5);
 
     return boxSizer;
@@ -320,15 +375,29 @@ void MainFrame::OnSend(wxCommandEvent& event) {
 }
 
 void MainFrame::OnGoTo(wxCommandEvent& event) {
-    double x, y;
-    if (!m_xInput->GetValue().ToDouble(&x) || !m_yInput->GetValue().ToDouble(&y)) {
-        wxLogError("Invalid coordinates!");
-        return;
+    if (!m_grbl || !m_grbl->IsConnected()) return;
+
+    std::optional<double> xTarget;
+    std::optional<double> yTarget;
+    double val;
+
+    // Try to parse X input
+    if (!m_xInput->GetValue().IsEmpty() && m_xInput->GetValue().ToDouble(&val)) {
+        xTarget = val;
     }
 
-    // Abstracted logic: we just say MoveTo, we don't care about "G0" or "\n"
-    m_grbl->MoveTo(x, y);
-    wxLogMessage("Moving to X:%.2f Y:%.2f", x, y);
+    // Try to parse Y input
+    if (!m_yInput->GetValue().IsEmpty() && m_yInput->GetValue().ToDouble(&val)) {
+        yTarget = val;
+    }
+
+    // Only send if at least one axis was validly filled
+    if (xTarget || yTarget) {
+        m_grbl->MoveTo(xTarget, yTarget);
+        wxLogMessage("Moving to absolute position...");
+    } else {
+        wxLogWarning("Please enter a valid coordinate for X or Y.");
+    }
 }
 
 void MainFrame::OnHome(wxCommandEvent& event) {
@@ -364,4 +433,42 @@ void MainFrame::OnReset(wxCommandEvent& event) {
         m_grbl->SendRealtimeCommand(Grbl::SoftReset);
         wxLogMessage("Soft Reset Sent!");
     }
+}
+
+void MainFrame::OnJog(wxCommandEvent& event) {
+    if(!m_grbl || !m_grbl->IsConnected()) {
+        wxLogWarning("Cannot jog: Not connected to GRBL.");
+        return;
+    }
+
+    // Get values from UI controls
+    double dist = m_stepSizeCtrl->GetValue();
+    double feed = m_feedRateCtrl->GetValue();
+
+    double moveX = 0.0;
+    double moveY = 0.0;
+
+    int id = event.GetId();
+
+    // 1. Calculate X movement
+    if (id == ID_JOG_LEFT || id == ID_JOG_UP_LEFT || id == ID_JOG_DOWN_LEFT) {
+        moveX = -dist;
+    } 
+    else if (id == ID_JOG_RIGHT || id == ID_JOG_UP_RIGHT || id == ID_JOG_DOWN_RIGHT) {
+        moveX = dist;
+    }
+
+    // 2. Calculate Y movement
+    if (id == ID_JOG_UP || id == ID_JOG_UP_LEFT || id == ID_JOG_UP_RIGHT) {
+        moveY = dist;
+    } 
+    else if (id == ID_JOG_DOWN || id == ID_JOG_DOWN_LEFT || id == ID_JOG_DOWN_RIGHT) {
+        moveY = -dist;
+    }
+
+    // 3. Delegate to the controller
+    m_grbl->JogTo(moveX, moveY, feed);
+    
+    // Optional: Log it for debugging
+    wxLogMessage("Jog requested: X=%.3f, Y=%.3f (F%.0f)", moveX, moveY, feed);
 }

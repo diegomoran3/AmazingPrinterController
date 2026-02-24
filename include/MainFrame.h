@@ -4,14 +4,19 @@
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/bind.hpp>
 
-#include <wx/wx.h>
-#include <wx/splitter.h>
-#include <wx/artprov.h>
-#include <memory>
 #include "CoordinatePanel.h"
 #include "GrblController.h"
 #include "GrblConfigDialog.h"
 #include "GrblScanWindow.h"
+
+#include <wx/wx.h>
+#include <wx/spinctrl.h> 
+#include <wx/statline.h>
+#include <wx/splitter.h>
+#include <wx/artprov.h>
+#include <wx/gbsizer.h>
+
+#include <memory>
 
 class MainFrame : public wxFrame
 {
@@ -50,6 +55,8 @@ private:
     void OnResume(wxCommandEvent& event);
     void OnReset(wxCommandEvent& event);
 
+    void OnJog(wxCommandEvent &event);
+
     // Helper Methods
     void UpdatePortList();
 
@@ -71,6 +78,9 @@ private:
     wxTextCtrl* m_yInput;
     wxButton* m_gotoBtn;
 
+    wxSpinCtrlDouble* m_stepSizeCtrl;
+    wxSpinCtrl* m_feedRateCtrl;
+
     // Logic - Replaced SerialPortManager with GrblController
     std::unique_ptr<GrblController> m_grbl;
 
@@ -86,7 +96,15 @@ private:
         ID_RESUME = 8,
         ID_RESET = 9,
         ID_SETTINGS_TOOL = 50,
-        ID_SETTINGS_SCAN = 51
+        ID_SETTINGS_SCAN = 51,
+        ID_JOG_UP = 100,
+        ID_JOG_DOWN = 101,
+        ID_JOG_LEFT = 102,
+        ID_JOG_RIGHT = 103,
+        ID_JOG_UP_LEFT = 104,
+        ID_JOG_UP_RIGHT = 105,
+        ID_JOG_DOWN_LEFT = 106,
+        ID_JOG_DOWN_RIGHT = 107
     };
 
     wxDECLARE_EVENT_TABLE();

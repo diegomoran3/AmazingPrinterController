@@ -8,6 +8,7 @@
 #include <thread>
 #include <atomic>
 #include <map>
+#include <optional>
 #include "SerialPortManager.h"
 
 enum class GrblState {
@@ -67,8 +68,9 @@ public:
     void Disconnect();
     bool IsConnected() const;
 
-    void MoveTo(double x, double y);
-    void MoveTo(double x, double y, double feedRate);
+    void MoveTo(std::optional<double> x, std::optional<double> y, std::optional<int> feedRate = std::nullopt);
+
+    void JogTo(double x, double y, int feedRate);
 
     void SendCommand(const std::string &command);
     void SendRealtimeCommand(const std::string &command);

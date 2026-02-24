@@ -168,15 +168,50 @@ void GrblController::ParseStatus(const std::string& line) {
     }
 }
 
-void GrblController::MoveTo(double x, double y) {
-    // GRBL move command: G0 (Rapid) or G1 (Linear)
-    std::string gcode = "G0 X" + std::to_string(x) + " Y" + std::to_string(y);
-    SendCommand(gcode);
+void GrblController::MoveTo(std::optional<double> x, std::optional<double> y, std::optional<int> feedRate) {
+    // Early exit if no axes were provided
+    if (!x.has_value() && !y.has_value()) {
+        std::cerr << "Warning: MoveTo called with no coordinates." << std::endl;
+        return;
+    }
+
+    std::ostringstream cmd;
+    
+    // Base safety commands: Metric (G21) and Absolute (G90)
+    // Automatically select G1 if feedRate exists, otherwise G0
+    cmd << "G21 G90 " << (feedRate.has_value() ? "G1" : "G0");
+    cmd << std::fixed << std::setprecision(3);
+    
+    if (x.has_value()) cmd << " X" << x.value();
+    if (y.has_value()) cmd << " Y" << y.value();
+    
+    // Append feed rate only if it was provided
+    if (feedRate.has_value()) {
+        cmd << " F" << feedRate.value();
+    }
+
+    SendCommand(cmd.str());
 }
 
-void GrblController::MoveTo(double x, double y, double feedRate) {
-    std::string gcode = "G1 X" + std::to_string(x) + " Y" + std::to_string(y) + " F" + std::to_string(feedRate);
-    SendCommand(gcode);
+void GrblController::JogTo(double x, double y, int feedRate) {
+    std::ostringstream cmd;
+    
+    // Set fixed precision to 3 decimal places for coordinates
+    cmd << "$J=G21 G91";
+    cmd << std::fixed << std::setprecision(3);
+    
+    // Only add X or Y if they are not zero
+    if (x != 0.0) {
+        cmd << " X" << x;
+    }
+    if (y != 0.0) {
+        cmd << " Y" << y;
+    }
+
+    // Feed rate is usually an integer, so drop the decimals
+    cmd << " F" << feedRate;
+
+    SendCommand(cmd.str());
 }
 
 void GrblController::SendCommand(const std::string& command) {

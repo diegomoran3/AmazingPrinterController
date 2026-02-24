@@ -122,8 +122,6 @@ void GrblScanWindow::OnStart(wxCommandEvent& event) {
             m_controller->StartScanCycle(startX, startY, rows, cols, stepX, stepY, 
                 [](int r, int c, double x, double y) {
                     //Jonathan: TODO for point reached callback
-                    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-                    printf("Reached Point R:%d C:%d at (%.2f, %.2f)\n", r, c, x, y);
                 }, 
                 dir, zigzag, speed
             );
