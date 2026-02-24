@@ -13,7 +13,6 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_BUTTON(ID_RESUME,           MainFrame::OnResume)
     EVT_BUTTON(ID_RESET,            MainFrame::OnReset)
     EVT_TOOL(ID_SETTINGS_TOOL,      MainFrame::OnOpenSettings)
-    EVT_TOOL(ID_SETTINGS_SCAN,      MainFrame::OnOpenScanSettings)
     EVT_BUTTON(ID_JOG_UP,           MainFrame::OnJog)
     EVT_BUTTON(ID_JOG_DOWN,         MainFrame::OnJog)
     EVT_BUTTON(ID_JOG_LEFT,         MainFrame::OnJog)
@@ -33,8 +32,6 @@ MainFrame::MainFrame()
     
     // Add a Settings Tool (You can use a custom icon, here using a standard one)
     toolbar->AddTool(ID_SETTINGS_TOOL, "GRBL Settings", 
-                     wxArtProvider::GetBitmap(wxART_LIST_VIEW, wxART_TOOLBAR));
-    toolbar->AddTool(ID_SETTINGS_SCAN, "Scan Settings", 
                      wxArtProvider::GetBitmap(wxART_LIST_VIEW, wxART_TOOLBAR));
                      
     toolbar->Realize();
@@ -64,17 +61,40 @@ void MainFrame::BuildLeftPanel(wxPanel* parent)
 {
     wxBoxSizer* leftSizer = new wxBoxSizer(wxVERTICAL);
 
-    // Use the specific 'parent' (m_leftPanel) for controls
+    // 1. Connection Box stays at the top (always visible)
     leftSizer->Add(CreateConnectionBox(parent), 0, wxEXPAND | wxALL, 5);
-    leftSizer->Add(CreateControlBox(parent), 0, wxEXPAND | wxALL, 5);
-    leftSizer->Add(CreateMotionBox(parent), 0, wxEXPAND | wxALL, 5);
-    
-    // Add your Manual Controls here if you kept them
-    // leftSizer->Add(CreateManualBox(parent), ...);
 
+    // 2. Create Notebook for switching between Manual and Scan
+    m_sidebarTabs = new wxNotebook(parent, wxID_ANY);
+    
+    // Create Pages
+    wxPanel* manualPage = new wxPanel(m_sidebarTabs);
+
+    // Build Manual Page (Existing logic)
+    BuildManualControlTab(manualPage);
+
+    m_scanPanel = new GrblScanWindow(m_sidebarTabs, m_grbl.get());
+
+    m_sidebarTabs->AddPage(manualPage, "Manual");
+    m_sidebarTabs->AddPage(m_scanPanel, "Scanner");
+
+    leftSizer->Add(m_sidebarTabs, 0, wxEXPAND | wxALL, 5);
+
+    // 3. Console stays at the bottom
     SetupLogArea(parent, leftSizer);
 
-    parent->SetSizer(leftSizer); // Critical: Set the sizer for this specific panel
+    parent->SetSizer(leftSizer);
+}
+
+void MainFrame::BuildManualControlTab(wxPanel* parent)
+{
+    wxBoxSizer* leftSizer = new wxBoxSizer(wxVERTICAL);
+
+    // Use the specific 'parent' (m_leftPanel) for controls
+    leftSizer->Add(CreateControlBox(parent), 0, wxEXPAND | wxALL, 5);
+    leftSizer->Add(CreateMotionBox(parent), 0, wxEXPAND | wxALL, 5);
+
+    parent->SetSizer(leftSizer);
 }
 
 void MainFrame::BuildRightPanel(wxPanel* parent)
@@ -159,16 +179,16 @@ wxSizer* MainFrame::CreateControlBox(wxPanel* parent)
     wxGridBagSizer* jogGrid = new wxGridBagSizer(5, 5);
 
     // 2. Directional Buttons (Y+, Y-, X-, X+)
-    wxButton* btnUp    = new wxButton(boxSizer->GetStaticBox(), ID_JOG_UP, "Y+", wxDefaultPosition, wxSize(45, 45));
-    wxButton* btnDown  = new wxButton(boxSizer->GetStaticBox(), ID_JOG_DOWN, "Y-", wxDefaultPosition, wxSize(45, 45));
-    wxButton* btnLeft  = new wxButton(boxSizer->GetStaticBox(), ID_JOG_LEFT, "X-", wxDefaultPosition, wxSize(45, 45));
-    wxButton* btnRight = new wxButton(boxSizer->GetStaticBox(), ID_JOG_RIGHT, "X+", wxDefaultPosition, wxSize(45, 45));
+    wxButton* btnUp    = new wxButton(boxSizer->GetStaticBox(), ID_JOG_UP,    wxString::FromUTF8("▲"), wxDefaultPosition, wxSize(45, 45)); btnUp->SetToolTip(wxString::FromUTF8("Move Y+"));
+    wxButton* btnDown  = new wxButton(boxSizer->GetStaticBox(), ID_JOG_DOWN,  wxString::FromUTF8("▼"), wxDefaultPosition, wxSize(45, 45)); btnDown->SetToolTip(wxString::FromUTF8("Move Y-"));
+    wxButton* btnLeft  = new wxButton(boxSizer->GetStaticBox(), ID_JOG_LEFT,  wxString::FromUTF8("◀"), wxDefaultPosition, wxSize(45, 45)); btnLeft->SetToolTip(wxString::FromUTF8("Move X-"));
+    wxButton* btnRight = new wxButton(boxSizer->GetStaticBox(), ID_JOG_RIGHT, wxString::FromUTF8("▶"), wxDefaultPosition, wxSize(45, 45)); btnRight->SetToolTip(wxString::FromUTF8("Move X+"));
 
-    // Diagonal Buttons
-    wxButton* btnUpLeft    = new wxButton(innerParent, ID_JOG_UP_LEFT, "↖", wxDefaultPosition, wxSize(45, 45));
-    wxButton* btnUpRight   = new wxButton(innerParent, ID_JOG_UP_RIGHT, "↗", wxDefaultPosition, wxSize(45, 45));
-    wxButton* btnDownLeft  = new wxButton(innerParent, ID_JOG_DOWN_LEFT, "↙", wxDefaultPosition, wxSize(45, 45));
-    wxButton* btnDownRight = new wxButton(innerParent, ID_JOG_DOWN_RIGHT, "↘", wxDefaultPosition, wxSize(45, 45));
+    // Diagonal Buttons (Using ↖, ↗, ↙, ↘)
+    wxButton* btnUpLeft    = new wxButton(innerParent, ID_JOG_UP_LEFT,    wxString::FromUTF8("↖"), wxDefaultPosition, wxSize(45, 45)); btnUpLeft->SetToolTip(wxString::FromUTF8("Move X- Y+"));
+    wxButton* btnUpRight   = new wxButton(innerParent, ID_JOG_UP_RIGHT,   wxString::FromUTF8("↗"), wxDefaultPosition, wxSize(45, 45)); btnUpRight->SetToolTip(wxString::FromUTF8("Move X+ Y+"));
+    wxButton* btnDownLeft  = new wxButton(innerParent, ID_JOG_DOWN_LEFT,  wxString::FromUTF8("↙"), wxDefaultPosition, wxSize(45, 45)); btnDownLeft->SetToolTip(wxString::FromUTF8("Move X- Y-"));
+    wxButton* btnDownRight = new wxButton(innerParent, ID_JOG_DOWN_RIGHT, wxString::FromUTF8("↘"), wxDefaultPosition, wxSize(45, 45)); btnDownRight->SetToolTip(wxString::FromUTF8("Move X+ Y-"));
 
     // 3. Center Home Button with Icon
     wxBitmapButton* btnHome = new wxBitmapButton(boxSizer->GetStaticBox(), ID_HOME, 
@@ -300,26 +320,6 @@ void MainFrame::OnOpenSettings(wxCommandEvent& event) {
     
     // Cleanup after it closes
     m_configDlg = nullptr; 
-}
-
-void MainFrame::OnOpenScanSettings(wxCommandEvent &event)
-{
-        if (!m_grbl->IsConnected()) {
-        wxMessageBox("Please connect to the machine first.", "Error", wxICON_ERROR);
-        return;
-    }
-
-    // Create the dialog
-    GrblScanWindow dlg(this, m_grbl.get());
-    
-    // Register it so we can feed it data
-    m_scanDlg = &dlg;
-    
-    // Show it (Blocking / Modal)
-    dlg.ShowModal();
-    
-    // Cleanup after it closes
-    m_scanDlg = nullptr; 
 }
 
 void MainFrame::OnRefresh(wxCommandEvent& event) {

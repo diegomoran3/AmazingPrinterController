@@ -6,14 +6,14 @@ enum {
     ID_BTN_CLOSE = 1002
 };
 
-wxBEGIN_EVENT_TABLE(GrblScanWindow, wxDialog)
+wxBEGIN_EVENT_TABLE(GrblScanWindow, wxPanel)
     EVT_BUTTON(ID_BTN_START, GrblScanWindow::OnStart)
     EVT_BUTTON(ID_BTN_CLOSE, GrblScanWindow::OnBtnClose)
     EVT_CLOSE(GrblScanWindow::OnClose)
 wxEND_EVENT_TABLE()
 
 GrblScanWindow::GrblScanWindow(wxWindow* parent, GrblController* controller)
-    : wxDialog(parent, wxID_ANY, "Scanner Configuration", wxDefaultPosition, wxSize(350, 450)),
+    : wxPanel(parent, wxID_ANY),
       m_controller(controller)
 {
     auto* mainSizer = new wxBoxSizer(wxVERTICAL);
@@ -51,18 +51,19 @@ GrblScanWindow::GrblScanWindow(wxWindow* parent, GrblController* controller)
     btnSizer->Add(m_btnClose, 0);
 
     // Layout
-    mainSizer->Add(formSizer, 1, wxALL | wxEXPAND, 15);
+    mainSizer->Add(formSizer, 0, wxALL | wxEXPAND, 15);
     mainSizer->Add(m_rbDirection, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 15);
     mainSizer->Add(m_chkZigzag, 0, wxALL | wxEXPAND, 15);
     mainSizer->Add(btnSizer, 0, wxALL | wxALIGN_RIGHT, 15);
 
     SetSizer(mainSizer);
     Layout();
-    CenterOnParent();
 }
 
 GrblScanWindow::~GrblScanWindow() {
-    // Ensure thread is joined if window is destroyed
+    if (m_isScanning) {
+        m_controller->CancelScan();
+    }
     if (m_workerThread.joinable()) {
         m_workerThread.join();
     }

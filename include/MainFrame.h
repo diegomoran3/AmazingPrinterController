@@ -15,6 +15,7 @@
 #include <wx/splitter.h>
 #include <wx/artprov.h>
 #include <wx/gbsizer.h>
+#include <wx/notebook.h>
 
 #include <memory>
 
@@ -28,12 +29,12 @@ private:
     GrblScanWindow* m_scanDlg = nullptr;
 
     void OnOpenSettings(wxCommandEvent& event);
-    void OnOpenScanSettings(wxCommandEvent& event);
 
     // Helper methods (Updated signature to take specific parents)
     void BuildLeftPanel(wxPanel* parent);
-    void BuildRightPanel(wxPanel* parent);
-    
+    void BuildManualControlTab(wxPanel *parent);
+    void BuildRightPanel(wxPanel *parent);
+
     // Sub-components of the Left Column
     wxSizer* CreateConnectionBox(wxPanel* parent);
     wxSizer* CreateMotionBox(wxPanel* parent);
@@ -81,6 +82,10 @@ private:
     wxSpinCtrlDouble* m_stepSizeCtrl;
     wxSpinCtrl* m_feedRateCtrl;
 
+    wxNotebook* m_sidebarTabs;
+
+    GrblScanWindow* m_scanPanel;
+
     // Logic - Replaced SerialPortManager with GrblController
     std::unique_ptr<GrblController> m_grbl;
 
@@ -96,7 +101,6 @@ private:
         ID_RESUME = 8,
         ID_RESET = 9,
         ID_SETTINGS_TOOL = 50,
-        ID_SETTINGS_SCAN = 51,
         ID_JOG_UP = 100,
         ID_JOG_DOWN = 101,
         ID_JOG_LEFT = 102,

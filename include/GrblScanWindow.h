@@ -4,7 +4,7 @@
 #include <atomic>
 #include "GrblController.h"
 
-class GrblScanWindow : public wxDialog {
+class GrblScanWindow : public wxPanel {
 public:
     GrblScanWindow(wxWindow* parent, GrblController* controller);
     ~GrblScanWindow();
