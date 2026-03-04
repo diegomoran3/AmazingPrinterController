@@ -1,9 +1,6 @@
 #ifndef MAINFRAME_H
 #define MAINFRAME_H
 
-#define BOOST_BIND_GLOBAL_PLACEHOLDERS
-#include <boost/bind.hpp>
-
 #include "CoordinatePanel.h"
 #include "GrblController.h"
 #include "GrblConfigDialog.h"
@@ -18,11 +15,21 @@
 #include <wx/notebook.h>
 
 #include <memory>
+#include <functional>
+
+struct PreviewRegion {
+    double x;
+    double y;
+    double width;
+    double height;
+};
 
 class MainFrame : public wxFrame
 {
 public:
     MainFrame();
+
+    void SetPreviewRegion(double x, double y, double width, double height);
 
 private:
     GrblConfigDialog* m_configDlg = nullptr; 
@@ -85,6 +92,8 @@ private:
     wxNotebook* m_sidebarTabs;
 
     GrblScanWindow* m_scanPanel;
+
+    PreviewRegion m_currentPreviewRegion;
 
     // Logic - Replaced SerialPortManager with GrblController
     std::unique_ptr<GrblController> m_grbl;

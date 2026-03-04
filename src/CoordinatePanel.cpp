@@ -17,7 +17,7 @@ CoordinatePanel::CoordinatePanel(wxWindow* parent) : wxPanel(parent) {
     minY = 0.0; maxY = 380.0;
 }
 
-void CoordinatePanel::SetPreviewRegion(double x, double y, double w, double h) {
+void CoordinatePanel::DrawPreviewRegion(double x, double y, double w, double h) {
     m_previewRect = wxRect2DDouble(x, y, w, h);
     m_hasPreview = true;
     Refresh();

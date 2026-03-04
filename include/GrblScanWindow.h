@@ -1,13 +1,12 @@
 #pragma once
-#include <wx/wx.h>
+
+#include "GrblController.h"
 #include <thread>
 #include <atomic>
-#include "GrblController.h"
-
-enum class ScanDirection {
-    Horizontal, 
-    Vertical   
-};
+#include <wx/wx.h>
+#include <wx/valnum.h>
+#include <wx/valgen.h>
+#include <functional>
 
 struct GridPatternSettings {
     double startX;
@@ -23,8 +22,13 @@ struct GridPatternSettings {
 
 class GrblScanWindow : public wxPanel {
 public:
-    GrblScanWindow(wxWindow* parent, GrblController* controller);
+    using PreviewCallback = std::function<void(double, double, double, double)>;
+
+    GrblScanWindow(wxWindow* parent, GrblController* controller, PreviewCallback onPreviewUpdate);
     ~GrblScanWindow();
+
+    GridPatternSettings GetSettings() const { return m_settings; }
+    void SetSettings(const GridPatternSettings& pattern);
 
 private:
     GrblController* m_controller;
@@ -41,8 +45,14 @@ private:
     wxCheckBox* m_chkZigzag;
     wxButton* m_btnStart;
 
-    GridPatternSettings GetGridPatternFromUI();
-    bool SetGridPatternForUI(const GridPatternSettings& pattern);
+    void AddInputDouble(wxFlexGridSizer* sizer, const wxString& label, wxTextCtrl*& ptr, double* dataPtr, double minVal = 0.0);
+    void AddInputInt(wxFlexGridSizer* sizer, const wxString& label, wxTextCtrl*& ptr, int* dataPtr, int minVal = 1);
+
+    void OnUIChange();
+
+    PreviewCallback OnPreviewUpdate;
+
+    GridPatternSettings m_settings;
 
     // Threading
     std::thread m_workerThread;

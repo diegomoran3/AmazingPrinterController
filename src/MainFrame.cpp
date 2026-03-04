@@ -23,6 +23,8 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_BUTTON(ID_JOG_DOWN_RIGHT,   MainFrame::OnJog)
 wxEND_EVENT_TABLE()
 
+using namespace std::placeholders;
+
 MainFrame::MainFrame()
     : wxFrame(NULL, wxID_ANY, "Amazing Printer Controller", wxDefaultPosition, wxSize(600, 500)),
       m_grbl(std::make_unique<GrblController>())
@@ -73,7 +75,11 @@ void MainFrame::BuildLeftPanel(wxPanel* parent)
     // Build Manual Page (Existing logic)
     BuildManualControlTab(manualPage);
 
-    m_scanPanel = new GrblScanWindow(m_sidebarTabs, m_grbl.get());
+    m_scanPanel = new GrblScanWindow(
+        m_sidebarTabs, 
+        m_grbl.get(), 
+        std::bind(&MainFrame::SetPreviewRegion, this, _1, _2, _3, _4)
+    );
 
     m_sidebarTabs->AddPage(manualPage, "Manual");
     m_sidebarTabs->AddPage(m_scanPanel, "Scanner");
@@ -303,7 +309,15 @@ void MainFrame::UpdatePortList() {
     if (!ports.empty()) m_portCombo->SetSelection(0);
 }
 
-void MainFrame::OnOpenSettings(wxCommandEvent& event) {
+void MainFrame::SetPreviewRegion(double x, double y, double width, double height)
+{
+    m_currentPreviewRegion = {x, y, width, height};
+    if(m_coordPanel)
+        m_coordPanel->DrawPreviewRegion(x, y, width, height);
+}
+
+void MainFrame::OnOpenSettings(wxCommandEvent &event)
+{
     // if (!m_grbl->IsConnected()) {
     //     wxMessageBox("Please connect to the machine first.", "Error", wxICON_ERROR);
     //     return;
@@ -319,7 +333,7 @@ void MainFrame::OnOpenSettings(wxCommandEvent& event) {
     dlg.ShowModal();
     
     // Cleanup after it closes
-    m_configDlg = nullptr; 
+    m_configDlg = nullptr;
 }
 
 void MainFrame::OnRefresh(wxCommandEvent& event) {
@@ -381,7 +395,7 @@ void MainFrame::OnGoTo(wxCommandEvent& event) {
     std::optional<double> yTarget;
     double val;
 
-    m_coordPanel->SetPreviewRegion(0, 0, 100, 100); // Example: Show a preview region (you can customize this)
+    m_coordPanel->DrawPreviewRegion(0, 0, 100, 100); // Example: Show a preview region (you can customize this)
 
     // Try to parse X input
     if (!m_xInput->GetValue().IsEmpty() && m_xInput->GetValue().ToDouble(&val)) {

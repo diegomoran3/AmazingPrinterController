@@ -51,9 +51,9 @@ namespace Grbl {
     const std::string Home         = "$H";
 }
 
-enum Direction {
-    DIR_Horizontal,
-    DIR_Vertical
+enum class ScanDirection {
+    Horizontal, 
+    Vertical   
 };
 
 class GrblController {
@@ -87,7 +87,7 @@ public:
     int rows, int cols, 
     double stepX, double stepY, 
     std::function<void(int, int, double, double)> onPointReached,
-    Direction direction,
+    ScanDirection direction,
     bool zigzag = false,
     double speed = 6000);
 

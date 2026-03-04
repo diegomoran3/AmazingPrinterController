@@ -11,11 +11,12 @@ struct DataPoint {
     wxColour color;
 };
 
+
 class CoordinatePanel : public wxPanel {
 public:
     CoordinatePanel(wxWindow* parent);
     
-    void SetPreviewRegion(double x, double y, double width, double height);
+    void DrawPreviewRegion(double x, double y, double width, double height);
     void ClearPreviewRegion();
 
     void AddPoint(double x, double y, wxColour color = *wxRED);

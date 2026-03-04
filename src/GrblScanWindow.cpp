@@ -10,36 +10,39 @@ wxBEGIN_EVENT_TABLE(GrblScanWindow, wxPanel)
     EVT_BUTTON(ID_BTN_START, GrblScanWindow::OnStart)
 wxEND_EVENT_TABLE()
 
-GrblScanWindow::GrblScanWindow(wxWindow* parent, GrblController* controller)
+GrblScanWindow::GrblScanWindow(wxWindow* parent, GrblController* controller, PreviewCallback onPreviewUpdate)
     : wxPanel(parent, wxID_ANY),
-      m_controller(controller)
+      m_controller(controller),
+      OnPreviewUpdate(onPreviewUpdate)
 {
+    m_settings = {0.0, 0.0, 5, 5, 10.0, 10.0, 1000, ScanDirection::Vertical, true};
+
     auto* mainSizer = new wxBoxSizer(wxVERTICAL);
-    auto* formSizer = new wxFlexGridSizer(2, 5, 10); // 2 cols, 5px hgap, 10px vgap
+    auto* formSizer = new wxFlexGridSizer(0, 2, 5, 10); 
     formSizer->AddGrowableCol(1, 1);
 
-    // --- Input Helper ---
-    auto AddInput = [&](const wxString& label, wxTextCtrl*& ptr, const wxString& def) {
-        formSizer->Add(new wxStaticText(this, wxID_ANY, label), 0, wxALIGN_CENTER_VERTICAL);
-        ptr = new wxTextCtrl(this, wxID_ANY, def);
-        formSizer->Add(ptr, 1, wxEXPAND);
-    };
-
     // 1. Create Fields
-    AddInput("Start X:", m_txtStartX, "0.0");
-    AddInput("Start Y:", m_txtStartY, "0.0");
-    AddInput("Rows:",    m_txtRows,   "5");
-    AddInput("Cols:",    m_txtCols,   "5");
-    AddInput("Step X:",  m_txtStepX,  "10.0");
-    AddInput("Step Y:",  m_txtStepY,  "10.0");
-    AddInput("Speed:",   m_txtSpeed,  "1000.0");
+    AddInputDouble(formSizer, "Start X:", m_txtStartX, &m_settings.startX, -400);
+    AddInputDouble(formSizer, "Start Y:", m_txtStartY, &m_settings.startY, -400);
+    AddInputInt(formSizer, "Rows:",    m_txtRows,   &m_settings.rows, -1);
+    AddInputInt(formSizer, "Cols:",    m_txtCols,   &m_settings.cols, 1);
+    AddInputDouble(formSizer, "Step X:",  m_txtStepX,  &m_settings.stepX, 0.1);
+    AddInputDouble(formSizer, "Step Y:",  m_txtStepY,  &m_settings.stepY, 0.1);
+    AddInputInt(formSizer, "Speed:",   m_txtSpeed,  &m_settings.speed, 1);
 
     // 2. Direction
     wxString choices[] = { "Horizontal", "Vertical" };
-    m_rbDirection = new wxRadioBox(this, wxID_ANY, "Direction", wxDefaultPosition, wxDefaultSize, 2, choices);
+    m_rbDirection = new wxRadioBox(this, wxID_ANY, "Direction", wxDefaultPosition, wxDefaultSize, 2, choices, 1, wxRA_SPECIFY_ROWS,
+                                   wxGenericValidator((int*)&m_settings.direction));
 
-    m_chkZigzag = new wxCheckBox(this, wxID_ANY, "Zigzag Mode (Snake Scan)");
-    m_chkZigzag->SetValue(true); // Default to on, it's faster
+    m_chkZigzag = new wxCheckBox(
+        this, wxID_ANY, "Zigzag Mode (Snake Scan)",
+        wxDefaultPosition, wxDefaultSize, 0,
+        wxGenericValidator(&m_settings.isZigzag)
+    );
+
+    m_chkZigzag->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent&) { this->OnUIChange(); });
+    m_rbDirection->Bind(wxEVT_RADIOBOX, [this](wxCommandEvent&) { this->OnUIChange(); });
 
     // 4. Buttons
     auto* btnSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -53,6 +56,8 @@ GrblScanWindow::GrblScanWindow(wxWindow* parent, GrblController* controller)
     mainSizer->Add(btnSizer, 0, wxALL | wxALIGN_RIGHT, 15);
 
     SetSizer(mainSizer);
+    SetSettings(m_settings);
+
     Layout();
 }
 
@@ -63,6 +68,37 @@ GrblScanWindow::~GrblScanWindow() {
     if (m_workerThread.joinable()) {
         m_workerThread.join();
     }
+}
+
+void GrblScanWindow::AddInputDouble(wxFlexGridSizer* sizer, const wxString& label, wxTextCtrl*& ptr, double* dataPtr, double minVal)
+{
+    sizer->Add(new wxStaticText(this, wxID_ANY, label), 0, wxALIGN_CENTER_VERTICAL);
+    
+    // Create the validator and link it to the data variable
+    wxFloatingPointValidator<double> val(2, dataPtr, wxNUM_VAL_DEFAULT);
+    val.SetMin(minVal); 
+    
+    ptr = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, val);
+    sizer->Add(ptr, 1, wxEXPAND);
+
+    ptr->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
+        this->OnUIChange();
+    });
+}
+
+void GrblScanWindow::AddInputInt(wxFlexGridSizer* sizer, const wxString& label, wxTextCtrl*& ptr, int* dataPtr, int minVal)
+{
+    sizer->Add(new wxStaticText(this, wxID_ANY, label), 0, wxALIGN_CENTER_VERTICAL);
+    
+    wxIntegerValidator<int> val(dataPtr, wxNUM_VAL_DEFAULT);
+    val.SetMin(minVal);
+    
+    ptr = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, val);
+    sizer->Add(ptr, 1, wxEXPAND);
+
+    ptr->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
+        this->OnUIChange();
+    });
 }
 
 void GrblScanWindow::ToggleControls(bool enable) {
@@ -81,43 +117,34 @@ void GrblScanWindow::ToggleControls(bool enable) {
     }
 }
 
-GridPatternSettings GrblScanWindow::GetGridPatternFromUI()
+void GrblScanWindow::OnUIChange()
 {
-    GridPatternSettings settings;
+    if (this->TransferDataFromWindow()) 
+    {        
+        m_btnStart->Enable(true);
 
-    m_txtStartX->GetValue().ToDouble(&settings.startX);
-    m_txtStartY->GetValue().ToDouble(&settings.startY);
-    
-    settings.rows = wxAtoi(m_txtRows->GetValue());
-    settings.cols = wxAtoi(m_txtCols->GetValue());
-    
-    m_txtStepX->GetValue().ToDouble(&settings.stepX);
-    m_txtStepY->GetValue().ToDouble(&settings.stepY);
-    settings.speed = wxAtoi(m_txtSpeed->GetValue());
-
-    settings.direction = static_cast<ScanDirection>(m_rbDirection->GetSelection());
-
-    settings.isZigzag = m_chkZigzag->IsChecked();
-
-    return settings;
+    if (OnPreviewUpdate) {
+            double width = (m_settings.cols - 1) * m_settings.stepX;
+            double height = (m_settings.rows - 1) * m_settings.stepY;
+            
+            OnPreviewUpdate(m_settings.startX, m_settings.startY, width, height);
+        }
+    } 
+    else 
+    {
+        m_btnStart->Enable(false);
+    }
 }
 
-bool GrblScanWindow::SetGridPatternForUI(const GridPatternSettings &pattern)
+void GrblScanWindow::SetSettings(const GridPatternSettings &pattern)
 {
-    m_txtStartX->SetValue(wxString::Format("%.3f", pattern.startX));
-    m_txtStartY->SetValue(wxString::Format("%.3f", pattern.startY));
-    
-    m_txtRows->SetValue(wxString::Format("%d", pattern.rows));
-    m_txtCols->SetValue(wxString::Format("%d", pattern.cols));
-    
-    m_txtStepX->SetValue(wxString::Format("%.3f", pattern.stepX));
-    m_txtStepY->SetValue(wxString::Format("%.3f", pattern.stepY));
-    m_txtSpeed->SetValue(wxString::Format("%.1f", pattern.speed));
+    m_settings = pattern;
 
-    m_rbDirection->SetSelection(static_cast<int>(pattern.direction));
-    m_chkZigzag->SetValue(pattern.isZigzag);
+    m_chkZigzag->SetValue(m_settings.isZigzag);
+    m_rbDirection->SetSelection((int)m_settings.direction);
+    TransferDataToWindow();
 
-    return true; 
+    OnUIChange();
 }
 
 void GrblScanWindow::OnStart(wxCommandEvent &event)
@@ -134,16 +161,6 @@ void GrblScanWindow::OnStart(wxCommandEvent &event)
         if (m_workerThread.joinable()) {
             m_workerThread.join();
         }
-
-        double startX = std::stod(m_txtStartX->GetValue().ToStdString());
-        double startY = std::stod(m_txtStartY->GetValue().ToStdString());
-        int rows = std::stoi(m_txtRows->GetValue().ToStdString());
-        int cols = std::stoi(m_txtCols->GetValue().ToStdString());
-        double stepX = std::stod(m_txtStepX->GetValue().ToStdString());
-        double stepY = std::stod(m_txtStepY->GetValue().ToStdString());
-        double speed = std::stod(m_txtSpeed->GetValue().ToStdString());
-        Direction dir = (m_rbDirection->GetSelection() == 0) ? DIR_Horizontal : DIR_Vertical;
-        bool zigzag = m_chkZigzag->GetValue();
         
         m_isScanning = true;
         ToggleControls(false); // Disable inputs
@@ -155,12 +172,11 @@ void GrblScanWindow::OnStart(wxCommandEvent &event)
 
         m_workerThread = std::thread([=, this]() {
             
-            // This now respects the m_shouldCancel flag
-            m_controller->StartScanCycle(startX, startY, rows, cols, stepX, stepY, 
+            m_controller->StartScanCycle(m_settings.startX, m_settings.startY, m_settings.rows, m_settings.cols, m_settings.stepX, m_settings.stepY, 
                 [](int r, int c, double x, double y) {
                     //Jonathan: TODO for point reached callback
                 }, 
-                dir, zigzag, speed
+                m_settings.direction, m_settings.isZigzag, m_settings.speed
             );
 
             // Update UI when finished (or cancelled)

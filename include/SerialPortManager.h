@@ -1,11 +1,7 @@
 #ifndef SERIALPORTMANAGER_H
 #define SERIALPORTMANAGER_H
 
-// Add this line to silence the Boost bind warnings
-#define BOOST_BIND_GLOBAL_PLACEHOLDER
-
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/optional.hpp>
