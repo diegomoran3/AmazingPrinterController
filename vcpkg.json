@@ -4,6 +4,7 @@
   "license": "MIT",
   "dependencies": [
     "boost-asio",
-    "wxwidgets"
+    "wxwidgets",
+    "glaze"
   ]
 }

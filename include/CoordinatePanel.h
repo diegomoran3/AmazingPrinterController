@@ -14,6 +14,9 @@ struct DataPoint {
 class CoordinatePanel : public wxPanel {
 public:
     CoordinatePanel(wxWindow* parent);
+    
+    void SetPreviewRegion(double x, double y, double width, double height);
+    void ClearPreviewRegion();
 
     void AddPoint(double x, double y, wxColour color = *wxRED);
     void ClearPoints();
@@ -33,6 +36,8 @@ private:
     void OnMouseClick(wxMouseEvent& event);
 
     std::function<void(double, double)> m_onClick;
+    wxRect2DDouble m_previewRect;
+    bool m_hasPreview = false;
 };
 
 #endif

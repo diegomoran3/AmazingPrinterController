@@ -4,6 +4,23 @@
 #include <atomic>
 #include "GrblController.h"
 
+enum class ScanDirection {
+    Horizontal, 
+    Vertical   
+};
+
+struct GridPatternSettings {
+    double startX;
+    double startY;
+    int rows;
+    int cols;
+    double stepX;
+    double stepY;
+    int speed;
+    ScanDirection direction;
+    bool isZigzag;
+};
+
 class GrblScanWindow : public wxPanel {
 public:
     GrblScanWindow(wxWindow* parent, GrblController* controller);
@@ -23,7 +40,9 @@ private:
     wxRadioBox* m_rbDirection;
     wxCheckBox* m_chkZigzag;
     wxButton* m_btnStart;
-    wxButton* m_btnClose;
+
+    GridPatternSettings GetGridPatternFromUI();
+    bool SetGridPatternForUI(const GridPatternSettings& pattern);
 
     // Threading
     std::thread m_workerThread;
@@ -31,8 +50,6 @@ private:
 
     // Events
     void OnStart(wxCommandEvent& event);
-    void OnClose(wxCloseEvent& event);
-    void OnBtnClose(wxCommandEvent& event);
 
     // Helpers
     void ToggleControls(bool enable);

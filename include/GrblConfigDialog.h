@@ -1,17 +1,40 @@
 #pragma once
+
+#include "GrblController.h"
 #include <wx/wx.h>
 #include <wx/grid.h>
-#include "GrblController.h"
+#include <string>
+#include <vector>
+#include <map>
+
+enum class GrblDataType {
+    Integer,
+    Float,
+    Boolean,
+    Mask
+};
+
+struct GrblSetting {
+    int id;
+    std::string name;
+    GrblDataType type;
+    std::string units;
+    std::string description;
+    std::string value;
+};
 
 class GrblConfigDialog : public wxDialog {
 public:
     GrblConfigDialog(wxWindow* parent, GrblController* controller);
     void ReloadGrid();
-    void ParseLine(const std::string& line);
 
 private:
     GrblController* m_controller;
     wxGrid* m_grid;
+
+    static const std::vector<GrblSetting>& GetGrblDefinitions();
+    
+    std::map<int, int> m_idToRowMap;
 
     void OnRefresh(wxCommandEvent& event);
     void OnSave(wxCommandEvent& event);

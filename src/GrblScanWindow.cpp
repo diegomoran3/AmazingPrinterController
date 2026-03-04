@@ -8,8 +8,6 @@ enum {
 
 wxBEGIN_EVENT_TABLE(GrblScanWindow, wxPanel)
     EVT_BUTTON(ID_BTN_START, GrblScanWindow::OnStart)
-    EVT_BUTTON(ID_BTN_CLOSE, GrblScanWindow::OnBtnClose)
-    EVT_CLOSE(GrblScanWindow::OnClose)
 wxEND_EVENT_TABLE()
 
 GrblScanWindow::GrblScanWindow(wxWindow* parent, GrblController* controller)
@@ -46,9 +44,7 @@ GrblScanWindow::GrblScanWindow(wxWindow* parent, GrblController* controller)
     // 4. Buttons
     auto* btnSizer = new wxBoxSizer(wxHORIZONTAL);
     m_btnStart = new wxButton(this, ID_BTN_START, "Start Scan");
-    m_btnClose = new wxButton(this, ID_BTN_CLOSE, "Close");
     btnSizer->Add(m_btnStart, 1, wxRIGHT, 5);
-    btnSizer->Add(m_btnClose, 0);
 
     // Layout
     mainSizer->Add(formSizer, 0, wxALL | wxEXPAND, 15);
@@ -85,7 +81,47 @@ void GrblScanWindow::ToggleControls(bool enable) {
     }
 }
 
-void GrblScanWindow::OnStart(wxCommandEvent& event) {
+GridPatternSettings GrblScanWindow::GetGridPatternFromUI()
+{
+    GridPatternSettings settings;
+
+    m_txtStartX->GetValue().ToDouble(&settings.startX);
+    m_txtStartY->GetValue().ToDouble(&settings.startY);
+    
+    settings.rows = wxAtoi(m_txtRows->GetValue());
+    settings.cols = wxAtoi(m_txtCols->GetValue());
+    
+    m_txtStepX->GetValue().ToDouble(&settings.stepX);
+    m_txtStepY->GetValue().ToDouble(&settings.stepY);
+    settings.speed = wxAtoi(m_txtSpeed->GetValue());
+
+    settings.direction = static_cast<ScanDirection>(m_rbDirection->GetSelection());
+
+    settings.isZigzag = m_chkZigzag->IsChecked();
+
+    return settings;
+}
+
+bool GrblScanWindow::SetGridPatternForUI(const GridPatternSettings &pattern)
+{
+    m_txtStartX->SetValue(wxString::Format("%.3f", pattern.startX));
+    m_txtStartY->SetValue(wxString::Format("%.3f", pattern.startY));
+    
+    m_txtRows->SetValue(wxString::Format("%d", pattern.rows));
+    m_txtCols->SetValue(wxString::Format("%d", pattern.cols));
+    
+    m_txtStepX->SetValue(wxString::Format("%.3f", pattern.stepX));
+    m_txtStepY->SetValue(wxString::Format("%.3f", pattern.stepY));
+    m_txtSpeed->SetValue(wxString::Format("%.1f", pattern.speed));
+
+    m_rbDirection->SetSelection(static_cast<int>(pattern.direction));
+    m_chkZigzag->SetValue(pattern.isZigzag);
+
+    return true; 
+}
+
+void GrblScanWindow::OnStart(wxCommandEvent &event)
+{
     if (m_isScanning) {
         m_controller->CancelScan();
         m_btnStart->Disable();
@@ -145,20 +181,4 @@ void GrblScanWindow::OnStart(wxCommandEvent& event) {
     } catch (...) {
         wxMessageBox("Invalid input", "Error");
     }
-}
-
-void GrblScanWindow::OnClose(wxCloseEvent& event) {
-    if (m_isScanning) {
-        if (event.CanVeto()) {
-            wxMessageBox("Cannot close while scanning is in progress.", "Busy");
-            event.Veto();
-            return;
-        }
-    }
-    // Proceed with destruction
-    Destroy();
-}
-
-void GrblScanWindow::OnBtnClose(wxCommandEvent& event) {
-    Close(); // Triggers OnClose
 }

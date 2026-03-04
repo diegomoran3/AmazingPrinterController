@@ -17,6 +17,17 @@ CoordinatePanel::CoordinatePanel(wxWindow* parent) : wxPanel(parent) {
     minY = 0.0; maxY = 380.0;
 }
 
+void CoordinatePanel::SetPreviewRegion(double x, double y, double w, double h) {
+    m_previewRect = wxRect2DDouble(x, y, w, h);
+    m_hasPreview = true;
+    Refresh();
+}
+
+void CoordinatePanel::ClearPreviewRegion() {
+    m_hasPreview = false;
+    Refresh(); 
+}
+
 wxPoint CoordinatePanel::CoordToScreen(double x, double y) {
     wxSize size = GetClientSize();
     
@@ -148,5 +159,18 @@ void CoordinatePanel::OnPaint(wxPaintEvent& evt) {
             dc.DrawText(wxString::Format("(%.0f,%.0f)", pt.x, pt.y), 
                        screenPt.x + 5, screenPt.y - 12);
         }
+    }
+
+    if (m_hasPreview) {
+        dc.SetPen(wxPen(*wxRED, 1, wxPENSTYLE_SHORT_DASH));
+        dc.SetBrush(*wxTRANSPARENT_BRUSH);
+
+        wxPoint topLeft = CoordToScreen(m_previewRect.m_x, m_previewRect.m_y + m_previewRect.m_height);
+        wxPoint bottomRight = CoordToScreen(m_previewRect.m_x + m_previewRect.m_width, m_previewRect.m_y);
+
+        int rectWidth = bottomRight.x - topLeft.x;
+        int rectHeight = bottomRight.y - topLeft.y; 
+
+        dc.DrawRectangle(topLeft.x, topLeft.y, rectWidth, rectHeight);
     }
 }

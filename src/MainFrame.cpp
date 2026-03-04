@@ -304,10 +304,10 @@ void MainFrame::UpdatePortList() {
 }
 
 void MainFrame::OnOpenSettings(wxCommandEvent& event) {
-    if (!m_grbl->IsConnected()) {
-        wxMessageBox("Please connect to the machine first.", "Error", wxICON_ERROR);
-        return;
-    }
+    // if (!m_grbl->IsConnected()) {
+    //     wxMessageBox("Please connect to the machine first.", "Error", wxICON_ERROR);
+    //     return;
+    // }
 
     // Create the dialog
     GrblConfigDialog dlg(this, m_grbl.get());
@@ -380,6 +380,8 @@ void MainFrame::OnGoTo(wxCommandEvent& event) {
     std::optional<double> xTarget;
     std::optional<double> yTarget;
     double val;
+
+    m_coordPanel->SetPreviewRegion(0, 0, 100, 100); // Example: Show a preview region (you can customize this)
 
     // Try to parse X input
     if (!m_xInput->GetValue().IsEmpty() && m_xInput->GetValue().ToDouble(&val)) {
