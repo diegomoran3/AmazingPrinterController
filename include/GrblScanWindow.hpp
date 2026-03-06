@@ -1,12 +1,14 @@
 #pragma once
 
-#include "GrblController.h"
+#include "GrblController.hpp"
+#include "ScanHandler.hpp"
 #include <thread>
 #include <atomic>
 #include <wx/wx.h>
 #include <wx/valnum.h>
 #include <wx/valgen.h>
 #include <functional>
+#include <memory>
 
 struct GridPatternSettings {
     double startX;
@@ -24,14 +26,14 @@ class GrblScanWindow : public wxPanel {
 public:
     using PreviewCallback = std::function<void(double, double, double, double)>;
 
-    GrblScanWindow(wxWindow* parent, GrblController* controller, PreviewCallback onPreviewUpdate);
+    GrblScanWindow(wxWindow* parent, std::shared_ptr<ScanHandler> controller, PreviewCallback onPreviewUpdate);
     ~GrblScanWindow();
 
     GridPatternSettings GetSettings() const { return m_settings; }
     void SetSettings(const GridPatternSettings& pattern);
 
 private:
-    GrblController* m_controller;
+    std::shared_ptr<ScanHandler> m_controller;
     
     // UI Controls
     wxTextCtrl* m_txtStartX;

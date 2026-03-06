@@ -1,4 +1,4 @@
-#include "GrblConfigDialog.h"
+#include "GrblConfigDialog.hpp"
 
 enum { ID_GRID_REFRESH = 100, ID_GRID_SAVE };
 
@@ -8,7 +8,7 @@ wxBEGIN_EVENT_TABLE(GrblConfigDialog, wxDialog)
     EVT_BUTTON(wxID_CLOSE, GrblConfigDialog::OnClose)
 wxEND_EVENT_TABLE()
 
-GrblConfigDialog::GrblConfigDialog(wxWindow* parent, GrblController* controller)
+GrblConfigDialog::GrblConfigDialog(wxWindow* parent, std::shared_ptr<GrblController> controller)
     : wxDialog(parent, wxID_ANY, "GRBL Configuration", wxDefaultPosition, wxSize(500, 600), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
       m_controller(controller)
 {
@@ -69,14 +69,30 @@ wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
 void GrblConfigDialog::ReloadGrid() {
     auto settings = m_controller->GetSettings();
     
-    if (m_grid->GetNumberRows() > 0) m_grid->DeleteRows(0, m_grid->GetNumberRows());
+    m_grid->BeginBatch();
 
-    for (auto const& [id, val] : settings) {
-        m_grid->AppendRows(1);
-        int row = m_grid->GetNumberRows() - 1;
-        m_grid->SetCellValue(row, 0, id);
-        m_grid->SetCellValue(row, 1, val);
+    for (const auto& [idStr, value] : settings) {
+        std::string cleanId = idStr;
+        
+        if (!cleanId.empty() && cleanId[0] == '$') {
+            cleanId.erase(0, 1);
+        }
+
+        try {
+            int id = std::stoi(cleanId);
+
+            auto it = m_idToRowMap.find(id);
+            if (it != m_idToRowMap.end()) {
+                int row = it->second;
+                
+                m_grid->SetCellValue(row, 2, value);
+            }
+        } catch (const std::exception& e) {
+            continue;
+        }
     }
+
+    m_grid->EndBatch();
 }
 
 const std::vector<GrblSetting> &GrblConfigDialog::GetGrblDefinitions()

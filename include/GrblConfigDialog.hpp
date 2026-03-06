@@ -1,11 +1,12 @@
 #pragma once
 
-#include "GrblController.h"
+#include "GrblController.hpp"
 #include <wx/wx.h>
 #include <wx/grid.h>
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
 
 enum class GrblDataType {
     Integer,
@@ -25,11 +26,11 @@ struct GrblSetting {
 
 class GrblConfigDialog : public wxDialog {
 public:
-    GrblConfigDialog(wxWindow* parent, GrblController* controller);
+    GrblConfigDialog(wxWindow* parent, std::shared_ptr<GrblController> controller);
     void ReloadGrid();
 
 private:
-    GrblController* m_controller;
+    std::shared_ptr<GrblController> m_controller;
     wxGrid* m_grid;
 
     static const std::vector<GrblSetting>& GetGrblDefinitions();

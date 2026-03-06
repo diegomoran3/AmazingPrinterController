@@ -1,4 +1,4 @@
-#include "CoordinatePanel.h"
+#include "CoordinatePanel.hpp"
 #include <cmath>
 #include <wx/dcbuffer.h>
 

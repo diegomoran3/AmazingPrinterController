@@ -1,4 +1,4 @@
-#include "GrblScanWindow.h"
+#include "GrblScanWindow.hpp"
 
 // IDs for events
 enum {
@@ -10,7 +10,7 @@ wxBEGIN_EVENT_TABLE(GrblScanWindow, wxPanel)
     EVT_BUTTON(ID_BTN_START, GrblScanWindow::OnStart)
 wxEND_EVENT_TABLE()
 
-GrblScanWindow::GrblScanWindow(wxWindow* parent, GrblController* controller, PreviewCallback onPreviewUpdate)
+GrblScanWindow::GrblScanWindow(wxWindow* parent, std::shared_ptr<ScanHandler> controller, PreviewCallback onPreviewUpdate)
     : wxPanel(parent, wxID_ANY),
       m_controller(controller),
       OnPreviewUpdate(onPreviewUpdate)

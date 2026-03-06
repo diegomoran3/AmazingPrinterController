@@ -1,4 +1,4 @@
-#include "GrblController.h"
+#include "GrblController.hpp"
 #include <regex>
 #include <chrono>
 
@@ -48,8 +48,6 @@ void GrblController::WaitForArrival(double targetX, double targetY, double timeo
     auto startTime = std::chrono::steady_clock::now();
 
     while (true) {
-        if (m_shouldCancel) return;
-
         auto now = std::chrono::steady_clock::now();
         if (std::chrono::duration<double>(now - startTime).count() > timeoutSecs) {
             std::cerr << "Timeout waiting for position!" << std::endl;
@@ -104,47 +102,7 @@ bool GrblController::ParseSetting(const std::string& line) {
     return true;
 }
 
-void GrblController::StartScanCycle(double startX, double startY, int rows, int cols, double stepX, double stepY, std::function<void(int, int, double, double)> onPointReached, ScanDirection direction, bool zigzag, double feedRate)
-{
-    m_shouldCancel = false;
 
-    MoveTo(startX, startY, feedRate);
-    WaitForArrival(startX, startY);
-
-    onPointReached(0, 0, startX, startY);
-
-    bool isHorizontal = (direction == ScanDirection::Horizontal);
-    int outerLimit = isHorizontal ? rows : cols;
-    int innerLimit = isHorizontal ? cols : rows;
-
-    for (int i = 0; i < outerLimit; ++i) {
-        for (int k = 0; k < innerLimit; ++k) {
-            
-            if (m_shouldCancel) return;
-
-            int j = k;
-            if (zigzag && (i % 2 != 0)) {
-                j = (innerLimit - 1) - k; 
-            }
-
-            int r = isHorizontal ? i : j;
-            int c = isHorizontal ? j : i;
-
-            double targetX = startX + (c * stepX);
-            double targetY = startY + (r * stepY);
-
-            MoveTo(targetX, targetY, feedRate);
-            WaitForArrival(targetX, targetY);
-
-            onPointReached(r, c, targetX, targetY);
-        }
-    }
-}
-
-void GrblController::CancelScan()
-{
-    m_shouldCancel = true;
-}
 
 void GrblController::ParseStatus(const std::string& line) {
     std::regex posRegex("MPos:([-+]?[0-9]*\\.?[0-9]+),([-+]?[0-9]*\\.?[0-9]+),([-+]?[0-9]*\\.?[0-9]+)");

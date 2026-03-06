@@ -1,4 +1,4 @@
-#include "MainFrame.h"
+#include "MainFrame.hpp"
 
 // Event Table
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
@@ -27,7 +27,7 @@ using namespace std::placeholders;
 
 MainFrame::MainFrame()
     : wxFrame(NULL, wxID_ANY, "Amazing Printer Controller", wxDefaultPosition, wxSize(600, 500)),
-      m_grbl(std::make_unique<GrblController>())
+      m_grbl(std::make_shared<GrblController>())
 {
     // --- Create Toolbar ---
     wxToolBar* toolbar = CreateToolBar(wxTB_FLAT | wxTB_HORIZONTAL);
@@ -72,12 +72,11 @@ void MainFrame::BuildLeftPanel(wxPanel* parent)
     // Create Pages
     wxPanel* manualPage = new wxPanel(m_sidebarTabs);
 
-    // Build Manual Page (Existing logic)
     BuildManualControlTab(manualPage);
 
     m_scanPanel = new GrblScanWindow(
-        m_sidebarTabs, 
-        m_grbl.get(), 
+        m_sidebarTabs,
+        std::make_shared<ScanHandler>(m_grbl),
         std::bind(&MainFrame::SetPreviewRegion, this, _1, _2, _3, _4)
     );
 
@@ -324,7 +323,7 @@ void MainFrame::OnOpenSettings(wxCommandEvent &event)
     // }
 
     // Create the dialog
-    GrblConfigDialog dlg(this, m_grbl.get());
+    GrblConfigDialog dlg(this, m_grbl);
     
     // Register it so we can feed it data
     m_configDlg = &dlg;
@@ -394,8 +393,6 @@ void MainFrame::OnGoTo(wxCommandEvent& event) {
     std::optional<double> xTarget;
     std::optional<double> yTarget;
     double val;
-
-    m_coordPanel->DrawPreviewRegion(0, 0, 100, 100); // Example: Show a preview region (you can customize this)
 
     // Try to parse X input
     if (!m_xInput->GetValue().IsEmpty() && m_xInput->GetValue().ToDouble(&val)) {

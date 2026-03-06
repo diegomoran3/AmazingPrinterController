@@ -5,14 +5,11 @@ project(AmazingPrinterConverter VERSION 0.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 2. Find Dependencies (MUST be done before using them)
-# Find Boost
-find_package(Boost REQUIRED COMPONENTS asio system)
-
 # Find wxWidgets (Required for the log window)
 find_package(wxWidgets REQUIRED COMPONENTS core base)
 # This includes the "hidden" setup.h path you were missing earlier
 include(${wxWidgets_USE_FILE})
+find_path(BEXT_DI_INCLUDE_DIRS "boost/di.hpp")
 
 find_package(glaze CONFIG REQUIRED)
 

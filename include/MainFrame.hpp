@@ -1,10 +1,11 @@
 #ifndef MAINFRAME_H
 #define MAINFRAME_H
 
-#include "CoordinatePanel.h"
-#include "GrblController.h"
-#include "GrblConfigDialog.h"
-#include "GrblScanWindow.h"
+#include "CoordinatePanel.hpp"
+#include "GrblController.hpp"
+#include "GrblConfigDialog.hpp"
+#include "GrblScanWindow.hpp"
+#include "AppSettings.hpp"
 
 #include <wx/wx.h>
 #include <wx/spinctrl.h> 
@@ -81,7 +82,7 @@ private:
     wxTextCtrl* m_cmdInput;
     wxButton* m_sendBtn;
 
-    CoordinatePanel* m_coordPanel;
+    CoordinatePanel* m_coordPanel = nullptr;
     wxTextCtrl* m_xInput;
     wxTextCtrl* m_yInput;
     wxButton* m_gotoBtn;
@@ -95,8 +96,9 @@ private:
 
     PreviewRegion m_currentPreviewRegion;
 
-    // Logic - Replaced SerialPortManager with GrblController
-    std::unique_ptr<GrblController> m_grbl;
+    AppSettings m_settings;
+
+    std::shared_ptr<GrblController> m_grbl;
 
     // Event IDs
     enum {
