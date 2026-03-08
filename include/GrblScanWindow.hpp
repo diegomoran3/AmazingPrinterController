@@ -2,6 +2,7 @@
 
 #include "GrblController.hpp"
 #include "ScanHandler.hpp"
+#include "AppSettings.hpp"
 #include <thread>
 #include <atomic>
 #include <wx/wx.h>
@@ -10,27 +11,14 @@
 #include <functional>
 #include <memory>
 
-struct GridPatternSettings {
-    double startX;
-    double startY;
-    int rows;
-    int cols;
-    double stepX;
-    double stepY;
-    int speed;
-    ScanDirection direction;
-    bool isZigzag;
-};
-
 class GrblScanWindow : public wxPanel {
 public:
     using PreviewCallback = std::function<void(double, double, double, double)>;
 
-    GrblScanWindow(wxWindow* parent, std::shared_ptr<ScanHandler> controller, PreviewCallback onPreviewUpdate);
+    GrblScanWindow(wxWindow* parent, std::shared_ptr<ScanHandler> controller, PreviewCallback onPreviewUpdate, GridPatternSettings* initialSettings);
     ~GrblScanWindow();
 
-    GridPatternSettings GetSettings() const { return m_settings; }
-    void SetSettings(const GridPatternSettings& pattern);
+    void SetSettings(GridPatternSettings& pattern);
 
 private:
     std::shared_ptr<ScanHandler> m_controller;
@@ -54,7 +42,7 @@ private:
 
     PreviewCallback OnPreviewUpdate;
 
-    GridPatternSettings m_settings;
+    GridPatternSettings* m_settings;
 
     // Threading
     std::thread m_workerThread;

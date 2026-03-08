@@ -2,7 +2,7 @@
 #include <cmath>
 #include <wx/dcbuffer.h>
 
-CoordinatePanel::CoordinatePanel(wxWindow* parent) : wxPanel(parent) {
+CoordinatePanel::CoordinatePanel(wxWindow* parent, double minX, double maxX, double minY, double maxY) : wxPanel(parent), minX(minX), maxX(maxX), minY(minY), maxY(maxY) {
     SetBackgroundStyle(wxBG_STYLE_PAINT);
     
     // Set the requested window size
@@ -13,8 +13,10 @@ CoordinatePanel::CoordinatePanel(wxWindow* parent) : wxPanel(parent) {
     Bind(wxEVT_LEFT_DOWN, &CoordinatePanel::OnMouseClick, this);
     
     // Set coordinate system to match requested range
-    minX = 0.0; maxX = 400.0;
-    minY = 0.0; maxY = 380.0;
+    this->minX = minX;
+    this->maxX = maxX;
+    this->minY = minY;
+    this->maxY = maxY;
 }
 
 void CoordinatePanel::DrawPreviewRegion(double x, double y, double w, double h) {
@@ -31,18 +33,39 @@ void CoordinatePanel::ClearPreviewRegion() {
 wxPoint CoordinatePanel::CoordToScreen(double x, double y) {
     wxSize size = GetClientSize();
     
-    // Margins to allow space for axis labels
-    int marginLeft = 45;
-    int marginBottom = 35;
-    int marginRight = 20;
-    int marginTop = 20;
-    
-    int drawableWidth = size.x - marginLeft - marginRight;
-    int drawableHeight = size.y - marginBottom - marginTop;
+    // 1. Define base margins
+    int marginLeft = 45, marginBottom = 35, marginRight = 20, marginTop = 20;
+    int availableWidth = size.x - marginLeft - marginRight;
+    int availableHeight = size.y - marginBottom - marginTop;
 
-    // Linear transformation: (value / range) * pixel_width
-    int screenX = marginLeft + ((x - minX) / (maxX - minX)) * drawableWidth;
-    int screenY = (size.y - marginBottom) - ((y - minY) / (maxY - minY)) * drawableHeight;
+    if (availableWidth <= 0 || availableHeight <= 0) return wxPoint(0,0);
+
+    // 2. Calculate aspect ratios
+    double dataAspectRatio = (maxX - minX) / (maxY - minY);
+    double screenAspectRatio = (double)availableWidth / availableHeight;
+
+    int drawableWidth, drawableHeight;
+    int xOffset = marginLeft;
+    int yOffset = marginTop;
+
+    if (screenAspectRatio > dataAspectRatio) {
+        // Window is too wide: height is the constraint
+        drawableHeight = availableHeight;
+        drawableWidth = availableHeight * dataAspectRatio;
+        // Center horizontally in the available space
+        xOffset += (availableWidth - drawableWidth) / 2;
+    } else {
+        // Window is too tall: width is the constraint
+        drawableWidth = availableWidth;
+        drawableHeight = availableWidth / dataAspectRatio;
+        // Center vertically in the available space
+        yOffset += (availableHeight - drawableHeight) / 2;
+    }
+
+    // 3. Transform coordinates
+    int screenX = xOffset + ((x - minX) / (maxX - minX)) * drawableWidth;
+    // Note: yOffset + drawableHeight gives the "bottom" of our centered graph
+    int screenY = (yOffset + drawableHeight) - ((y - minY) / (maxY - minY)) * drawableHeight;
     
     return wxPoint(screenX, screenY);
 }

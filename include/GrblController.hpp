@@ -1,5 +1,4 @@
-#ifndef GRBLCONTROLLER_H
-#define GRBLCONTROLLER_H
+#pragma once
 
 #include "SerialPortManager.hpp"
 #include <GrblTypes.hpp>
@@ -41,7 +40,7 @@ public:
     void SetOnStatusUpdate(StatusCallback callback);
     std::vector<std::string> GetAvailablePorts();
 
-    std::map<std::string, std::string> GetSettings() const { return m_settings; }
+    std::map<std::string, std::string> const GetSettings() const { return m_settings; }
     bool ParseSetting(const std::string& line);
 
     void WaitForArrival(double targetX, double targetY, double timeoutSecs = 10.0);
@@ -65,5 +64,3 @@ private:
 
     const double POS_TOLERANCE = 0.5;
 };
-
-#endif

@@ -1,6 +1,4 @@
-#ifndef COORDINATEPANEL_H
-#define COORDINATEPANEL_H
-
+#pragma once
 #include <wx/wx.h>
 #include <vector>
 #include <functional>
@@ -14,7 +12,7 @@ struct DataPoint {
 
 class CoordinatePanel : public wxPanel {
 public:
-    CoordinatePanel(wxWindow* parent);
+    CoordinatePanel(wxWindow* parent, double minX = 0.0, double maxX = 400.0, double minY = 0.0, double maxY = 380.0);
     
     void DrawPreviewRegion(double x, double y, double width, double height);
     void ClearPreviewRegion();
@@ -40,5 +38,3 @@ private:
     wxRect2DDouble m_previewRect;
     bool m_hasPreview = false;
 };
-
-#endif

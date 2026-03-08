@@ -28,7 +28,7 @@ struct PreviewRegion {
 class MainFrame : public wxFrame
 {
 public:
-    MainFrame();
+    MainFrame(AppSettings* settings);
 
     void SetPreviewRegion(double x, double y, double width, double height);
 
@@ -96,7 +96,7 @@ private:
 
     PreviewRegion m_currentPreviewRegion;
 
-    AppSettings m_settings;
+    AppSettings* m_settings;
 
     std::shared_ptr<GrblController> m_grbl;
 

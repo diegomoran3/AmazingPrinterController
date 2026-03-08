@@ -23,11 +23,10 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_BUTTON(ID_JOG_DOWN_RIGHT,   MainFrame::OnJog)
 wxEND_EVENT_TABLE()
 
-using namespace std::placeholders;
-
-MainFrame::MainFrame()
+MainFrame::MainFrame(AppSettings* settings)
     : wxFrame(NULL, wxID_ANY, "Amazing Printer Controller", wxDefaultPosition, wxSize(600, 500)),
-      m_grbl(std::make_shared<GrblController>())
+      m_grbl(std::make_shared<GrblController>()),
+        m_settings(settings)
 {
     // --- Create Toolbar ---
     wxToolBar* toolbar = CreateToolBar(wxTB_FLAT | wxTB_HORIZONTAL);
@@ -77,7 +76,8 @@ void MainFrame::BuildLeftPanel(wxPanel* parent)
     m_scanPanel = new GrblScanWindow(
         m_sidebarTabs,
         std::make_shared<ScanHandler>(m_grbl),
-        std::bind(&MainFrame::SetPreviewRegion, this, _1, _2, _3, _4)
+        [this](double x, double y, double w, double h) { this->SetPreviewRegion(x,y,w,h); },
+        &m_settings->lastUsedPattern
     );
 
     m_sidebarTabs->AddPage(manualPage, "Manual");
@@ -110,7 +110,6 @@ void MainFrame::BuildRightPanel(wxPanel* parent)
 
     // CoordinatePanel now lives inside the right panel
     m_coordPanel = new CoordinatePanel(parent);
-    m_coordPanel->SetMinSize(wxSize(400, 400));
 
     m_coordPanel->SetOnPointClicked([this](double x, double y) {
         

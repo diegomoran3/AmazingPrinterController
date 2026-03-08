@@ -33,7 +33,7 @@ void ScanHandler::StartScanCycle(double startX, double startY, int rows, int col
             m_grbl->MoveTo(targetX, targetY, feedRate);
             m_grbl->WaitForArrival(targetX, targetY);
 
-            onPointReached(r, c, targetX, targetY);
+            onPointReached(r, c, targetX, targetY);            
         }
     }
 }

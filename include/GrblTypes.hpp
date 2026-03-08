@@ -1,5 +1,4 @@
-#ifndef GRBL_TYPES_HPP
-#define GRBL_TYPES_HPP
+#pragma once
 
 #include <string>
 
@@ -42,5 +41,3 @@ namespace Grbl {
     const std::string Unlock       = "$X";
     const std::string Home         = "$H";
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef SERIALPORTMANAGER_H
-#define SERIALPORTMANAGER_H
+#pragma once
 
 #include <boost/asio.hpp>
 #include <boost/asio/deadline_timer.hpp>
@@ -44,5 +43,3 @@ class SerialPortManager
         boost::asio::executor_work_guard<boost::asio::io_context::executor_type> workGuard_;
 
 };
-
-#endif // SERIALPORTMANAGER_H

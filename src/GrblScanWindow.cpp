@@ -10,35 +10,34 @@ wxBEGIN_EVENT_TABLE(GrblScanWindow, wxPanel)
     EVT_BUTTON(ID_BTN_START, GrblScanWindow::OnStart)
 wxEND_EVENT_TABLE()
 
-GrblScanWindow::GrblScanWindow(wxWindow* parent, std::shared_ptr<ScanHandler> controller, PreviewCallback onPreviewUpdate)
+GrblScanWindow::GrblScanWindow(wxWindow* parent, std::shared_ptr<ScanHandler> controller, PreviewCallback onPreviewUpdate, GridPatternSettings* initialSettings)
     : wxPanel(parent, wxID_ANY),
       m_controller(controller),
-      OnPreviewUpdate(onPreviewUpdate)
+      OnPreviewUpdate(onPreviewUpdate),
+      m_settings(initialSettings)
 {
-    m_settings = {0.0, 0.0, 5, 5, 10.0, 10.0, 1000, ScanDirection::Vertical, true};
-
     auto* mainSizer = new wxBoxSizer(wxVERTICAL);
     auto* formSizer = new wxFlexGridSizer(0, 2, 5, 10); 
     formSizer->AddGrowableCol(1, 1);
 
     // 1. Create Fields
-    AddInputDouble(formSizer, "Start X:", m_txtStartX, &m_settings.startX, -400);
-    AddInputDouble(formSizer, "Start Y:", m_txtStartY, &m_settings.startY, -400);
-    AddInputInt(formSizer, "Rows:",    m_txtRows,   &m_settings.rows, -1);
-    AddInputInt(formSizer, "Cols:",    m_txtCols,   &m_settings.cols, 1);
-    AddInputDouble(formSizer, "Step X:",  m_txtStepX,  &m_settings.stepX, 0.1);
-    AddInputDouble(formSizer, "Step Y:",  m_txtStepY,  &m_settings.stepY, 0.1);
-    AddInputInt(formSizer, "Speed:",   m_txtSpeed,  &m_settings.speed, 1);
+    AddInputDouble(formSizer, "Start X:", m_txtStartX, &m_settings->startX, -400);
+    AddInputDouble(formSizer, "Start Y:", m_txtStartY, &m_settings->startY, -400);
+    AddInputInt(formSizer, "Rows:",    m_txtRows,   &m_settings->rows, -1);
+    AddInputInt(formSizer, "Cols:",    m_txtCols,   &m_settings->cols, 1);
+    AddInputDouble(formSizer, "Step X:",  m_txtStepX,  &m_settings->stepX, 0.1);
+    AddInputDouble(formSizer, "Step Y:",  m_txtStepY,  &m_settings->stepY, 0.1);
+    AddInputInt(formSizer, "Speed:",   m_txtSpeed,  &m_settings->speed, 1);
 
     // 2. Direction
     wxString choices[] = { "Horizontal", "Vertical" };
     m_rbDirection = new wxRadioBox(this, wxID_ANY, "Direction", wxDefaultPosition, wxDefaultSize, 2, choices, 1, wxRA_SPECIFY_ROWS,
-                                   wxGenericValidator((int*)&m_settings.direction));
+                                   wxGenericValidator((int*)&m_settings->direction));
 
     m_chkZigzag = new wxCheckBox(
         this, wxID_ANY, "Zigzag Mode (Snake Scan)",
         wxDefaultPosition, wxDefaultSize, 0,
-        wxGenericValidator(&m_settings.isZigzag)
+        wxGenericValidator(&m_settings->isZigzag)
     );
 
     m_chkZigzag->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent&) { this->OnUIChange(); });
@@ -56,7 +55,7 @@ GrblScanWindow::GrblScanWindow(wxWindow* parent, std::shared_ptr<ScanHandler> co
     mainSizer->Add(btnSizer, 0, wxALL | wxALIGN_RIGHT, 15);
 
     SetSizer(mainSizer);
-    SetSettings(m_settings);
+    SetSettings(*m_settings);
 
     Layout();
 }
@@ -124,10 +123,10 @@ void GrblScanWindow::OnUIChange()
         m_btnStart->Enable(true);
 
     if (OnPreviewUpdate) {
-            double width = (m_settings.cols - 1) * m_settings.stepX;
-            double height = (m_settings.rows - 1) * m_settings.stepY;
+            double width = (m_settings->cols - 1) * m_settings->stepX;
+            double height = (m_settings->rows - 1) * m_settings->stepY;
             
-            OnPreviewUpdate(m_settings.startX, m_settings.startY, width, height);
+            OnPreviewUpdate(m_settings->startX, m_settings->startY, width, height);
         }
     } 
     else 
@@ -136,12 +135,12 @@ void GrblScanWindow::OnUIChange()
     }
 }
 
-void GrblScanWindow::SetSettings(const GridPatternSettings &pattern)
+void GrblScanWindow::SetSettings(GridPatternSettings &pattern)
 {
-    m_settings = pattern;
+    m_settings = &pattern;
 
-    m_chkZigzag->SetValue(m_settings.isZigzag);
-    m_rbDirection->SetSelection((int)m_settings.direction);
+    m_chkZigzag->SetValue(m_settings->isZigzag);
+    m_rbDirection->SetSelection((int)m_settings->direction);
     TransferDataToWindow();
 
     OnUIChange();
@@ -172,11 +171,11 @@ void GrblScanWindow::OnStart(wxCommandEvent &event)
 
         m_workerThread = std::thread([=, this]() {
             
-            m_controller->StartScanCycle(m_settings.startX, m_settings.startY, m_settings.rows, m_settings.cols, m_settings.stepX, m_settings.stepY, 
+            m_controller->StartScanCycle(m_settings->startX, m_settings->startY, m_settings->rows, m_settings->cols, m_settings->stepX, m_settings->stepY, 
                 [](int r, int c, double x, double y) {
                     //Jonathan: TODO for point reached callback
                 }, 
-                m_settings.direction, m_settings.isZigzag, m_settings.speed
+                m_settings->direction, m_settings->isZigzag, m_settings->speed
             );
 
             // Update UI when finished (or cancelled)
