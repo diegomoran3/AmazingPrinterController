@@ -3,6 +3,7 @@
 #include "GrblController.hpp"
 #include "ScanHandler.hpp"
 #include "AppSettings.hpp"
+#include "wxHelpers.hpp"
 #include <thread>
 #include <atomic>
 #include <wx/wx.h>
@@ -34,9 +35,6 @@ private:
     wxRadioBox* m_rbDirection;
     wxCheckBox* m_chkZigzag;
     wxButton* m_btnStart;
-
-    void AddInputDouble(wxFlexGridSizer* sizer, const wxString& label, wxTextCtrl*& ptr, double* dataPtr, double minVal = 0.0);
-    void AddInputInt(wxFlexGridSizer* sizer, const wxString& label, wxTextCtrl*& ptr, int* dataPtr, int minVal = 1);
 
     void OnUIChange();
 

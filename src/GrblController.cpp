@@ -75,8 +75,11 @@ void GrblController::PollingThreadLoop()
     while (m_keepPolling) {
         if (IsConnected()) {
             m_serial->Write(Grbl::StatusQuery);
+        } else {
+            m_keepPolling = false; 
+            break;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(m_pollingIntervalMs));
     }
 }
 

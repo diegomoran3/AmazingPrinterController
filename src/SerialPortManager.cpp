@@ -87,6 +87,7 @@ bool SerialPortManager::Write(const boost::asio::const_buffer& buffer) {
         return true;
     } catch (const boost::system::system_error& e) {
         std::cerr << "Write error: " << e.what() << "\n";
+        ClosePort();
         return false;
     }
 }
@@ -106,13 +107,17 @@ void SerialPortManager::DoRead() {
     serial_.async_read_some(boost::asio::buffer(&m_readChar, 1),
         [this](const boost::system::error_code& ec, std::size_t bytes_transferred) {
             if (!ec) {
-                if (m_readChar == '\n') {
-                    if (m_onLineRead) m_onLineRead(m_inputBuffer);
+                if (m_readChar == '\n' || m_readChar == '\r') {
+                    if (m_onLineRead && !m_inputBuffer.empty()) m_onLineRead(m_inputBuffer);
                     m_inputBuffer.clear();
-                } else if (m_readChar != '\r') {
+                } else {
                     m_inputBuffer += m_readChar;
                 }
-                DoRead(); // Wait for the next character
+                DoRead();
+            }
+            else {
+                std::cerr << "Read error: " << ec.message() << "\n";
+                ClosePort(); 
             }
         });
 }

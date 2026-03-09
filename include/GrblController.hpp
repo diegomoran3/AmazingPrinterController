@@ -56,6 +56,7 @@ private:
     // Threading members
     std::thread m_pollThread;
     std::atomic<bool> m_keepPolling{false};
+    std::atomic<int> m_pollingIntervalMs{100};
 
     MessageCallback m_onMessageReceived;
     StatusCallback m_onStatusUpdate;
