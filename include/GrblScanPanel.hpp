@@ -13,12 +13,12 @@
 #include <functional>
 #include <memory>
 
-class GrblScanWindow : public wxPanel {
+class GrblScanPanel : public wxPanel {
 public:
     using PreviewCallback = std::function<void(const std::vector<ScanLine>&)>;
 
-    GrblScanWindow(wxWindow* parent, std::shared_ptr<ScanHandler> controller, PreviewCallback onPreviewUpdate, GridPatternSettings* initialSettings);
-    ~GrblScanWindow();
+    GrblScanPanel(wxWindow* parent, std::shared_ptr<ScanHandler> controller, PreviewCallback onPreviewUpdate, GridPatternSettings* initialSettings);
+    ~GrblScanPanel();
 
     void SetSettings(GridPatternSettings& pattern);
 

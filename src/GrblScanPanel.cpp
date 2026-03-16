@@ -1,4 +1,4 @@
-#include "GrblScanWindow.hpp"
+#include "GrblScanPanel.hpp"
 
 // IDs for events
 enum {
@@ -6,12 +6,12 @@ enum {
     ID_BTN_CLOSE = 1002
 };
 
-wxBEGIN_EVENT_TABLE(GrblScanWindow, wxPanel)
-    EVT_BUTTON(ID_BTN_START, GrblScanWindow::OnStart)
-    EVT_TIMER(GrblScanWindow::PREVIEW_TIMER_ID, GrblScanWindow::OnPreviewTimerFired)
+wxBEGIN_EVENT_TABLE(GrblScanPanel, wxPanel)
+    EVT_BUTTON(ID_BTN_START, GrblScanPanel::OnStart)
+    EVT_TIMER(GrblScanPanel::PREVIEW_TIMER_ID, GrblScanPanel::OnPreviewTimerFired)
 wxEND_EVENT_TABLE()
 
-GrblScanWindow::GrblScanWindow(wxWindow* parent, std::shared_ptr<ScanHandler> controller, PreviewCallback onPreviewUpdate, GridPatternSettings* initialSettings)
+GrblScanPanel::GrblScanPanel(wxWindow* parent, std::shared_ptr<ScanHandler> controller, PreviewCallback onPreviewUpdate, GridPatternSettings* initialSettings)
     : wxPanel(parent, wxID_ANY),
       m_controller(controller),
       OnPreviewUpdate(onPreviewUpdate),
@@ -58,7 +58,7 @@ GrblScanWindow::GrblScanWindow(wxWindow* parent, std::shared_ptr<ScanHandler> co
     Layout();
 }
 
-GrblScanWindow::~GrblScanWindow() {
+GrblScanPanel::~GrblScanPanel() {
     m_previewTimer.Stop();
     if (m_isScanning) {
         m_controller->CancelScan();
@@ -68,7 +68,7 @@ GrblScanWindow::~GrblScanWindow() {
     }
 }
 
-void GrblScanWindow::RebindValidators()
+void GrblScanPanel::RebindValidators()
 {
     // Re-point all validators to the current m_settings struct.
     // This is what makes SetSettings() work with just TransferDataToWindow().
@@ -85,7 +85,7 @@ void GrblScanWindow::RebindValidators()
     m_rbDirection->SetValidator(wxGenericValidator((int*)&m_settings->direction));
 }
 
-void GrblScanWindow::ToggleControls(bool enable) {
+void GrblScanPanel::ToggleControls(bool enable) {
     m_txtStartX->Enable(enable);
     m_txtStartY->Enable(enable);
     m_txtRows->Enable(enable);
@@ -103,14 +103,11 @@ void GrblScanWindow::ToggleControls(bool enable) {
     }
 }
 
-void GrblScanWindow::OnUIChange()
+void GrblScanPanel::OnUIChange()
 {
-    // Transfer data from controls into m_settings immediately (cheap)
     if (this->TransferDataFromWindow()) {
         m_btnStart->Enable(true);
-
-        // Reset the debounce timer — preview only recalculates 
-        // after the user stops changing things for PREVIEW_DELAY_MS
+    
         m_previewTimer.StartOnce(PREVIEW_DELAY_MS);
     } else {
         m_btnStart->Enable(false);
@@ -118,7 +115,7 @@ void GrblScanWindow::OnUIChange()
     }
 }
 
-void GrblScanWindow::OnPreviewTimerFired(wxTimerEvent& event)
+void GrblScanPanel::OnPreviewTimerFired(wxTimerEvent& event)
 {
     if (!OnPreviewUpdate) return;
 
@@ -132,15 +129,17 @@ void GrblScanWindow::OnPreviewTimerFired(wxTimerEvent& event)
     OnPreviewUpdate(scanLines);
 }
 
-void GrblScanWindow::SetSettings(GridPatternSettings &pattern)
+void GrblScanPanel::SetSettings(GridPatternSettings &pattern)
 {
     m_settings = &pattern;
 
-    RebindValidators();
+    m_chkContinuous->SetValue(m_settings->isContinuous);
+    m_chkZigzag->SetValue(m_settings->isZigzag);
+    m_rbDirection->SetSelection(m_settings->direction == ScanDirection::Horizontal ? 0 : 1);
     TransferDataToWindow();
 }
 
-void GrblScanWindow::RefreshPreview()
+void GrblScanPanel::RefreshPreview()
 {
     if (!OnPreviewUpdate) return;
 
@@ -154,7 +153,7 @@ void GrblScanWindow::RefreshPreview()
     OnPreviewUpdate(scanLines);
 }
 
-void GrblScanWindow::OnStart(wxCommandEvent &event)
+void GrblScanPanel::OnStart(wxCommandEvent &event)
 {
     if (m_isScanning) {
         m_controller->CancelScan();
