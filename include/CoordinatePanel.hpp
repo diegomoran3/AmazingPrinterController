@@ -24,6 +24,8 @@ public:
     void AddPoint(double x, double y, wxColour color = *wxRED);
     void ClearPoints();
 
+    void SetMachinePosition(double x, double y);
+
     void SetOnPointClicked(std::function<void(double, double)> callback) {
         m_onClick = callback;
     }
@@ -34,6 +36,11 @@ private:
 
     double minX, maxX, minY, maxY;
     std::vector<DataPoint> points;
+
+    // Persistent machine position (updated by status polling, drawn separately)
+    double m_machineX = 0.0;
+    double m_machineY = 0.0;
+    bool m_hasMachinePos = false;
 
     void ScreenToCoord(int px, int py, double& outX, double& outY);
     void OnMouseClick(wxMouseEvent& event);

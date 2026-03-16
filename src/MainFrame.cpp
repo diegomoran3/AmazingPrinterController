@@ -80,8 +80,15 @@ void MainFrame::BuildLeftPanel(wxPanel* parent)
         &m_settings->lastUsedPattern
     );
 
+    m_settingsPanel = new AppSettingsPanel(
+        m_sidebarTabs,
+        m_settings,
+        [this]() { this->ApplySettings(); }
+    );
+
     m_sidebarTabs->AddPage(manualPage, "Manual");
     m_sidebarTabs->AddPage(m_scanPanel, "Scanner");
+    m_sidebarTabs->AddPage(m_settingsPanel, "Settings");
 
     leftSizer->Add(m_sidebarTabs, 0, wxEXPAND | wxALL, 5);
 
@@ -293,8 +300,7 @@ void MainFrame::SetupGrblCallbacks()
 
     m_grbl->SetOnStatusUpdate([this](const GrblStatus& status) {
         this->CallAfter([this, status]() {
-            m_coordPanel->ClearPoints();
-            m_coordPanel->AddPoint(status.x, status.y, *wxBLUE);
+            m_coordPanel->SetMachinePosition(status.x, status.y);
         });
     });
 }
@@ -316,8 +322,33 @@ void MainFrame::SetPreviewRegion(double x, double y, double width, double height
 
 void MainFrame::SetScanGridPreview(const std::vector<ScanLine>& scanLines)
 {
-    if (m_coordPanel)
-        m_coordPanel->SetScanGridPreview(scanLines);
+    if (m_coordPanel) {
+        if (m_settings->showPreview)
+            m_coordPanel->SetScanGridPreview(scanLines);
+        else
+            m_coordPanel->ClearScanGridPreview();
+    }
+}
+
+void MainFrame::ApplySettings()
+{
+    // Polling rate -> GrblController polling interval
+    if (m_settings->statusPollRateHz > 0) {
+        int intervalMs = 1000 / m_settings->statusPollRateHz;
+        m_grbl->SetPollingInterval(intervalMs);
+    }
+
+    // Show/hide scan preview
+    if (m_coordPanel) {
+        if (m_settings->showPreview) {
+            // Re-send the current scan grid so it reappears
+            if (m_scanPanel)
+                m_scanPanel->RefreshPreview();
+        } else {
+            m_coordPanel->ClearScanGridPreview();
+            m_coordPanel->ClearPreviewRegion();
+        }
+    }
 }
 
 void MainFrame::OnOpenSettings(wxCommandEvent &event)
@@ -359,8 +390,6 @@ void MainFrame::OnConnect(wxCommandEvent& event) {
         m_portCombo->Enable(false);
 
         std::thread([this, portStd]() {
-            
-
             bool success = m_grbl->Connect(portStd);
             
             wxTheApp->CallAfter([this, success, portStd]() {
@@ -370,6 +399,11 @@ void MainFrame::OnConnect(wxCommandEvent& event) {
                 if (success) {
                     m_connectBtn->SetLabel("Disconnect");
                     wxLogMessage("Successfully connected to %s", portStd);
+
+                    if (m_settings->autoHomeOnConnect) {
+                        m_grbl->SendCommand(Grbl::Home);
+                        wxLogMessage("Auto-homing ($H)...");
+                    }
                 } else {
                     m_connectBtn->SetLabel("Connect");
                     m_portCombo->Enable(true);

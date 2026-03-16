@@ -45,6 +45,9 @@ public:
 
     void WaitForArrival(double targetX, double targetY, double timeoutSecs = 10.0);
 
+    void SetPollingInterval(int intervalMs) { m_pollingIntervalMs = intervalMs; }
+    int  GetPollingInterval() const { return m_pollingIntervalMs; }
+    
 private:
     void PollingThreadLoop();
     void ParseStatus(const std::string& line);
@@ -63,5 +66,5 @@ private:
 
     GrblStatus m_currentStatus;
 
-    const double POS_TOLERANCE = 0.5;
+    double m_posTolerance = 0.5;
 };

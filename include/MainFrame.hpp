@@ -5,6 +5,7 @@
 #include "GrblController.hpp"
 #include "GrblConfigDialog.hpp"
 #include "GrblScanWindow.hpp"
+#include "AppSettingsPanel.hpp"
 #include "AppSettings.hpp"
 
 #include <wx/wx.h>
@@ -94,6 +95,9 @@ private:
     wxNotebook* m_sidebarTabs;
 
     GrblScanWindow* m_scanPanel;
+    AppSettingsPanel* m_settingsPanel;
+
+    void ApplySettings();
 
     PreviewRegion m_currentPreviewRegion;
 

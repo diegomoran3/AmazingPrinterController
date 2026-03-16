@@ -140,6 +140,20 @@ void GrblScanWindow::SetSettings(GridPatternSettings &pattern)
     TransferDataToWindow();
 }
 
+void GrblScanWindow::RefreshPreview()
+{
+    if (!OnPreviewUpdate) return;
+
+    auto scanLines = m_controller->CreateScanLines(
+        m_settings->rows, m_settings->cols,
+        m_settings->startX, m_settings->startY,
+        m_settings->stepX, m_settings->stepY,
+        m_settings->direction, m_settings->isZigzag,
+        m_settings->leadDistance);
+
+    OnPreviewUpdate(scanLines);
+}
+
 void GrblScanWindow::OnStart(wxCommandEvent &event)
 {
     if (m_isScanning) {

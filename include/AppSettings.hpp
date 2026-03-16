@@ -1,5 +1,7 @@
 #pragma once
 
+#include "GrblController.hpp"
+
 struct GridPatternSettings {
     double startX = 0.0;
     double startY = 0.0;
@@ -14,10 +16,19 @@ struct GridPatternSettings {
     double leadDistance = 0.0;
 };
 
+struct JogSettings {
+    double stepSize = 10.0;
+    int feedRate = 6000;
+};
+
 struct AppSettings {
-    public :
-        bool showPreview = true;
-        bool autoHomeOnConnect = true;
-        int statusUpdateRefreshRateHz = 10;
-        GridPatternSettings lastUsedPattern;
+    bool showPreview = true;
+
+    bool autoHomeOnConnect = true;
+
+    int statusPollRateHz = 5;        
+
+    JogSettings jogSettings;
+
+    GridPatternSettings lastUsedPattern;
 };

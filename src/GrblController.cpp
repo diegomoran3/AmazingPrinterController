@@ -57,7 +57,7 @@ void GrblController::WaitForArrival(double targetX, double targetY, double timeo
         double dx = std::abs(m_currentStatus.x - targetX);
         double dy = std::abs(m_currentStatus.y - targetY);
 
-        if (m_currentStatus.state == GrblState::Idle && dx < POS_TOLERANCE && dy < POS_TOLERANCE) {
+        if (m_currentStatus.state == GrblState::Idle && dx < m_posTolerance && dy < m_posTolerance) {
             break; 
         }
 

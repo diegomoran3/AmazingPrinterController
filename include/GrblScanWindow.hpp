@@ -22,6 +22,9 @@ public:
 
     void SetSettings(GridPatternSettings& pattern);
 
+    // Force re-send the current scan grid preview through the callback
+    void RefreshPreview();
+
 private:
     std::shared_ptr<ScanHandler> m_controller;
     

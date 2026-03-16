@@ -150,6 +150,13 @@ void CoordinatePanel::ClearPoints() {
     Refresh();
 }
 
+void CoordinatePanel::SetMachinePosition(double x, double y) {
+    m_machineX = x;
+    m_machineY = y;
+    m_hasMachinePos = true;
+    Refresh();
+}
+
 void CoordinatePanel::OnPaint(wxPaintEvent& evt) {
     wxAutoBufferedPaintDC dc(this);
     dc.Clear();
@@ -296,5 +303,26 @@ void CoordinatePanel::OnPaint(wxPaintEvent& evt) {
         int rectHeight = bottomRight.y - topLeft.y; 
 
         dc.DrawRectangle(topLeft.x, topLeft.y, rectWidth, rectHeight);
+    }
+
+    // Draw machine position last so it's always visible on top
+    if (m_hasMachinePos) {
+        wxPoint mPos = CoordToScreen(m_machineX, m_machineY);
+        
+        // Crosshair
+        dc.SetPen(wxPen(*wxBLUE, 2));
+        int crossSize = 8;
+        dc.DrawLine(mPos.x - crossSize, mPos.y, mPos.x + crossSize, mPos.y);
+        dc.DrawLine(mPos.x, mPos.y - crossSize, mPos.x, mPos.y + crossSize);
+        
+        // Filled dot in center
+        dc.SetBrush(wxBrush(*wxBLUE));
+        dc.SetPen(wxPen(*wxWHITE, 1));
+        dc.DrawCircle(mPos, 4);
+
+        // Coordinate label
+        dc.SetTextForeground(*wxBLUE);
+        dc.DrawText(wxString::Format("(%.1f, %.1f)", m_machineX, m_machineY),
+                    mPos.x + 10, mPos.y - 15);
     }
 }
