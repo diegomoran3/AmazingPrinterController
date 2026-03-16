@@ -215,3 +215,23 @@ void GrblController::SetOnStatusUpdate(StatusCallback callback) {
 std::vector<std::string> GrblController::GetAvailablePorts() {
     return m_serial->ScanPorts();
 }
+
+double GrblController::GetAxisAcceleration(char axis) const {
+    // $120 = X accel, $121 = Y accel, $122 = Z accel  (mm/sec^2)
+    std::string key;
+    switch (axis) {
+        case 'X': case 'x': key = "$120"; break;
+        case 'Y': case 'y': key = "$121"; break;
+        case 'Z': case 'z': key = "$122"; break;
+        default: return 100.0; // conservative fallback
+    }
+
+    auto it = m_settings.find(key);
+    if (it != m_settings.end()) {
+        try {
+            double val = std::stod(it->second);
+            if (val > 0.0) return val;
+        } catch (...) {}
+    }
+    return 100.0; // conservative default if setting not yet read
+}

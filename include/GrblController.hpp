@@ -47,6 +47,8 @@ public:
 
     void SetPollingInterval(int intervalMs) { m_pollingIntervalMs = intervalMs; }
     int  GetPollingInterval() const { return m_pollingIntervalMs; }
+
+    double GetAxisAcceleration(char axis) const;
     
 private:
     void PollingThreadLoop();
@@ -56,7 +58,6 @@ private:
 
     std::map<std::string, std::string> m_settings;
     
-    // Threading members
     std::thread m_pollThread;
     std::atomic<bool> m_keepPolling{false};
     std::atomic<int> m_pollingIntervalMs{100};

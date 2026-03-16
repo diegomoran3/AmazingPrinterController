@@ -31,6 +31,7 @@ class ScanHandler {
             
         void CancelScan();
         
+        double CalculateLeadDistance(int feedRate, char axis) const;
 
     private:
         std::atomic<bool> m_shouldCancel{ false };

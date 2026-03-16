@@ -9,7 +9,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(wxWidgets REQUIRED COMPONENTS core base)
 # This includes the "hidden" setup.h path you were missing earlier
 include(${wxWidgets_USE_FILE})
-find_path(BEXT_DI_INCLUDE_DIRS "boost/di.hpp")
 
 find_package(glaze CONFIG REQUIRED)
 
