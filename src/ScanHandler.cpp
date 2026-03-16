@@ -98,6 +98,27 @@ std::vector<ScanLine> ScanHandler::CreateScanLines(int rows, int cols, double st
             currentLine.points.push_back(pt);  
         }
 
+        // Set physical start/end positions for this line (used by continuous scan)
+        if (!currentLine.points.empty()) {
+            const auto& first = currentLine.points.front();
+            const auto& last = currentLine.points.back();
+
+            // Determine lead direction (extend start/end along the scan axis)
+            if (isHorizontal) {
+                double leadSign = isReverse ? 1.0 : -1.0;
+                currentLine.physicalStartX = first.x + leadSign * leadDistance;
+                currentLine.physicalStartY = first.y;
+                currentLine.physicalEndX = last.x - leadSign * leadDistance;
+                currentLine.physicalEndY = last.y;
+            } else {
+                double leadSign = isReverse ? 1.0 : -1.0;
+                currentLine.physicalStartX = first.x;
+                currentLine.physicalStartY = first.y + leadSign * leadDistance;
+                currentLine.physicalEndX = last.x;
+                currentLine.physicalEndY = last.y - leadSign * leadDistance;
+            }
+        }
+
         lines.push_back(currentLine);
     }
 

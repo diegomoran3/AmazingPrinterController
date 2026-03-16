@@ -9,6 +9,7 @@ public:
     {
         m_configHandler.load<AppSettings>(m_settings);
         MainFrame* frame = new MainFrame(&m_settings);
+        frame->Maximize(true);
         frame->Show(true);
         return true;
     }

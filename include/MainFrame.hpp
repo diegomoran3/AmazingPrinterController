@@ -31,6 +31,7 @@ public:
     MainFrame(AppSettings* settings);
 
     void SetPreviewRegion(double x, double y, double width, double height);
+    void SetScanGridPreview(const std::vector<ScanLine>& scanLines);
 
 private:
     GrblConfigDialog* m_configDlg = nullptr; 

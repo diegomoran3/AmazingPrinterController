@@ -8,13 +8,15 @@ enum {
 
 wxBEGIN_EVENT_TABLE(GrblScanWindow, wxPanel)
     EVT_BUTTON(ID_BTN_START, GrblScanWindow::OnStart)
+    EVT_TIMER(GrblScanWindow::PREVIEW_TIMER_ID, GrblScanWindow::OnPreviewTimerFired)
 wxEND_EVENT_TABLE()
 
 GrblScanWindow::GrblScanWindow(wxWindow* parent, std::shared_ptr<ScanHandler> controller, PreviewCallback onPreviewUpdate, GridPatternSettings* initialSettings)
     : wxPanel(parent, wxID_ANY),
       m_controller(controller),
       OnPreviewUpdate(onPreviewUpdate),
-      m_settings(initialSettings)
+      m_settings(initialSettings),
+      m_previewTimer(this, PREVIEW_TIMER_ID)
 {
     auto* mainSizer = new wxBoxSizer(wxVERTICAL);
     auto* formSizer = new wxFlexGridSizer(0, 2, 5, 10); 
@@ -34,12 +36,13 @@ GrblScanWindow::GrblScanWindow(wxWindow* parent, std::shared_ptr<ScanHandler> co
     m_rbDirection = new wxRadioBox(this, wxID_ANY, "Direction", wxDefaultPosition, wxDefaultSize, 2, choices, 1, wxRA_SPECIFY_ROWS,
                                    wxGenericValidator((int*)&m_settings->direction));
 
-
     wxHelpers::AddCheckBox(this, formSizer, "Zigzag Mode (Snake Scan)", m_chkZigzag, &m_settings->isZigzag, [this]() { this->OnUIChange(); });
+    wxHelpers::AddCheckBox(this, formSizer, "Continuous Scan", m_chkContinuous, &m_settings->isContinuous, [this]() { this->OnUIChange(); });
+    wxHelpers::AddInputDouble(this, formSizer, "Lead Dist:", m_txtLeadDistance, &m_settings->leadDistance, [this]() { this->OnUIChange(); }, 0.0);
 
     m_rbDirection->Bind(wxEVT_RADIOBOX, [this](wxCommandEvent&) { this->OnUIChange(); });
 
-    // 4. Buttons
+    // 3. Buttons
     auto* btnSizer = new wxBoxSizer(wxHORIZONTAL);
     m_btnStart = new wxButton(this, ID_BTN_START, "Start Scan");
     btnSizer->Add(m_btnStart, 1, wxRIGHT, 5);
@@ -56,12 +59,30 @@ GrblScanWindow::GrblScanWindow(wxWindow* parent, std::shared_ptr<ScanHandler> co
 }
 
 GrblScanWindow::~GrblScanWindow() {
+    m_previewTimer.Stop();
     if (m_isScanning) {
         m_controller->CancelScan();
     }
     if (m_workerThread.joinable()) {
         m_workerThread.join();
     }
+}
+
+void GrblScanWindow::RebindValidators()
+{
+    // Re-point all validators to the current m_settings struct.
+    // This is what makes SetSettings() work with just TransferDataToWindow().
+    m_txtStartX->SetValidator(wxFloatingPointValidator<double>(3, &m_settings->startX));
+    m_txtStartY->SetValidator(wxFloatingPointValidator<double>(3, &m_settings->startY));
+    m_txtRows->SetValidator(wxIntegerValidator<int>(&m_settings->rows));
+    m_txtCols->SetValidator(wxIntegerValidator<int>(&m_settings->cols));
+    m_txtStepX->SetValidator(wxFloatingPointValidator<double>(3, &m_settings->stepX));
+    m_txtStepY->SetValidator(wxFloatingPointValidator<double>(3, &m_settings->stepY));
+    m_txtSpeed->SetValidator(wxIntegerValidator<int>(&m_settings->speed));
+    m_txtLeadDistance->SetValidator(wxFloatingPointValidator<double>(3, &m_settings->leadDistance));
+    m_chkZigzag->SetValidator(wxGenericValidator(&m_settings->isZigzag));
+    m_chkContinuous->SetValidator(wxGenericValidator(&m_settings->isContinuous));
+    m_rbDirection->SetValidator(wxGenericValidator((int*)&m_settings->direction));
 }
 
 void GrblScanWindow::ToggleControls(bool enable) {
@@ -72,8 +93,10 @@ void GrblScanWindow::ToggleControls(bool enable) {
     m_txtStepX->Enable(enable);
     m_txtStepY->Enable(enable);
     m_txtSpeed->Enable(enable);
+    m_txtLeadDistance->Enable(enable);
     m_rbDirection->Enable(enable);
     m_chkZigzag->Enable(enable);
+    m_chkContinuous->Enable(enable);
 
     if (enable) {
         m_btnStart->Enable(true);
@@ -82,29 +105,38 @@ void GrblScanWindow::ToggleControls(bool enable) {
 
 void GrblScanWindow::OnUIChange()
 {
-    if (this->TransferDataFromWindow()) 
-    {        
+    // Transfer data from controls into m_settings immediately (cheap)
+    if (this->TransferDataFromWindow()) {
         m_btnStart->Enable(true);
 
-    if (OnPreviewUpdate) {
-            double width = (m_settings->cols - 1) * m_settings->stepX;
-            double height = (m_settings->rows - 1) * m_settings->stepY;
-            
-            OnPreviewUpdate(m_settings->startX, m_settings->startY, width, height);
-        }
-    } 
-    else 
-    {
+        // Reset the debounce timer — preview only recalculates 
+        // after the user stops changing things for PREVIEW_DELAY_MS
+        m_previewTimer.StartOnce(PREVIEW_DELAY_MS);
+    } else {
         m_btnStart->Enable(false);
+        m_previewTimer.Stop();
     }
+}
+
+void GrblScanWindow::OnPreviewTimerFired(wxTimerEvent& event)
+{
+    if (!OnPreviewUpdate) return;
+
+    auto scanLines = m_controller->CreateScanLines(
+        m_settings->rows, m_settings->cols,
+        m_settings->startX, m_settings->startY,
+        m_settings->stepX, m_settings->stepY,
+        m_settings->direction, m_settings->isZigzag,
+        m_settings->leadDistance);
+    
+    OnPreviewUpdate(scanLines);
 }
 
 void GrblScanWindow::SetSettings(GridPatternSettings &pattern)
 {
     m_settings = &pattern;
 
-    m_chkZigzag->SetValue(m_settings->isZigzag);
-    m_rbDirection->SetSelection((int)m_settings->direction);
+    RebindValidators();
     TransferDataToWindow();
 }
 
@@ -134,14 +166,17 @@ void GrblScanWindow::OnStart(wxCommandEvent &event)
         m_workerThread = std::thread([=, this]() {
 
             auto scanLines = m_controller->CreateScanLines(m_settings->rows, m_settings->cols, m_settings->startX, m_settings->startY, 
-                m_settings->stepX, m_settings->stepY, m_settings->direction, m_settings->isZigzag);
+                m_settings->stepX, m_settings->stepY, m_settings->direction, m_settings->isZigzag, m_settings->leadDistance);
             
-            m_controller->StartScanCycle(scanLines,
-                [](int r, int c, double x, double y) {
-                    //Jonathan: TODO for point reached callback
-                }, 
-                m_settings->speed
-            );
+            auto pointCallback = [](int r, int c, double x, double y) {
+                //Jonathan: TODO for point reached callback
+            };
+
+            if (m_settings->isContinuous) {
+                m_controller->StartContinuousScanCycle(scanLines, pointCallback, m_settings->speed);
+            } else {
+                m_controller->StartScanCycle(scanLines, pointCallback, m_settings->speed);
+            }
 
             // Update UI when finished (or cancelled)
             this->CallAfter([this]() {
@@ -152,8 +187,6 @@ void GrblScanWindow::OnStart(wxCommandEvent &event)
                 ToggleControls(true); // Re-enables inputs and buttons
                 Layout();
                 
-                // Optional: Check if it was a real finish or a cancel
-                // (You'd need a getter for m_shouldCancel if you want different messages)
                 wxMessageBox("Scan cycle ended.", "Info");
             });
         });

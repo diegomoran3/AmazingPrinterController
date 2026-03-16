@@ -2,6 +2,7 @@
 #include <wx/wx.h>
 #include <vector>
 #include <functional>
+#include "ScanHandler.hpp"
 
 struct DataPoint {
     double x;
@@ -16,6 +17,9 @@ public:
     
     void DrawPreviewRegion(double x, double y, double width, double height);
     void ClearPreviewRegion();
+
+    void SetScanGridPreview(const std::vector<ScanLine>& scanLines);
+    void ClearScanGridPreview();
 
     void AddPoint(double x, double y, wxColour color = *wxRED);
     void ClearPoints();
@@ -37,4 +41,7 @@ private:
     std::function<void(double, double)> m_onClick;
     wxRect2DDouble m_previewRect;
     bool m_hasPreview = false;
+
+    std::vector<ScanLine> m_scanGridLines;
+    bool m_hasScanGrid = false;
 };

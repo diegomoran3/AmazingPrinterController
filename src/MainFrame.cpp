@@ -76,7 +76,7 @@ void MainFrame::BuildLeftPanel(wxPanel* parent)
     m_scanPanel = new GrblScanWindow(
         m_sidebarTabs,
         std::make_shared<ScanHandler>(m_grbl),
-        [this](double x, double y, double w, double h) { this->SetPreviewRegion(x,y,w,h); },
+        [this](const std::vector<ScanLine>& scanLines) { this->SetScanGridPreview(scanLines); },
         &m_settings->lastUsedPattern
     );
 
@@ -312,6 +312,12 @@ void MainFrame::SetPreviewRegion(double x, double y, double width, double height
     m_currentPreviewRegion = {x, y, width, height};
     if(m_coordPanel)
         m_coordPanel->DrawPreviewRegion(x, y, width, height);
+}
+
+void MainFrame::SetScanGridPreview(const std::vector<ScanLine>& scanLines)
+{
+    if (m_coordPanel)
+        m_coordPanel->SetScanGridPreview(scanLines);
 }
 
 void MainFrame::OnOpenSettings(wxCommandEvent &event)

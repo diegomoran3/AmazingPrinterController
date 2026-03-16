@@ -30,6 +30,19 @@ void CoordinatePanel::ClearPreviewRegion() {
     Refresh(); 
 }
 
+void CoordinatePanel::SetScanGridPreview(const std::vector<ScanLine>& scanLines) {
+    m_scanGridLines = scanLines;
+    m_hasScanGrid = true;
+    m_hasPreview = false; // Replace old rectangle preview
+    Refresh();
+}
+
+void CoordinatePanel::ClearScanGridPreview() {
+    m_scanGridLines.clear();
+    m_hasScanGrid = false;
+    Refresh();
+}
+
 wxPoint CoordinatePanel::CoordToScreen(double x, double y) {
     wxSize size = GetClientSize();
     
@@ -73,29 +86,42 @@ wxPoint CoordinatePanel::CoordToScreen(double x, double y) {
 void CoordinatePanel::ScreenToCoord(int px, int py, double& outX, double& outY) {
     wxSize size = GetClientSize();
     
-    // Must match the margins in CoordToScreen
-    int marginLeft = 45;
-    int marginBottom = 35;
-    int marginRight = 20;
-    int marginTop = 20;
-    
-    int drawableWidth = size.x - marginLeft - marginRight;
-    int drawableHeight = size.y - marginBottom - marginTop;
+    // Must match CoordToScreen exactly
+    int marginLeft = 45, marginBottom = 35, marginRight = 20, marginTop = 20;
+    int availableWidth = size.x - marginLeft - marginRight;
+    int availableHeight = size.y - marginBottom - marginTop;
 
-    // Prevent division by zero if window is tiny
+    if (availableWidth <= 0 || availableHeight <= 0) return;
+
+    // Replicate the same aspect ratio logic as CoordToScreen
+    double dataAspectRatio = (maxX - minX) / (maxY - minY);
+    double screenAspectRatio = (double)availableWidth / availableHeight;
+
+    int drawableWidth, drawableHeight;
+    int xOffset = marginLeft;
+    int yOffset = marginTop;
+
+    if (screenAspectRatio > dataAspectRatio) {
+        drawableHeight = availableHeight;
+        drawableWidth = availableHeight * dataAspectRatio;
+        xOffset += (availableWidth - drawableWidth) / 2;
+    } else {
+        drawableWidth = availableWidth;
+        drawableHeight = availableWidth / dataAspectRatio;
+        yOffset += (availableHeight - drawableHeight) / 2;
+    }
+
     if (drawableWidth <= 0 || drawableHeight <= 0) return;
 
-    // 1. Convert Screen X back to World X
-    // Formula: x = minX + ((screenX - margin) / pixelWidth) * range
-    double xPercent = (double)(px - marginLeft) / drawableWidth;
-    outX = minX + (xPercent * (maxX - minX));
+    // Inverse of: screenX = xOffset + ((x - minX) / (maxX - minX)) * drawableWidth
+    double xPercent = (double)(px - xOffset) / drawableWidth;
+    outX = minX + xPercent * (maxX - minX);
 
-    // 2. Convert Screen Y back to World Y (remember Y is inverted on screen)
-    // Formula: y = minY + ((screenHeight - margin - screenY) / pixelHeight) * range
-    double yPercent = (double)((size.y - marginBottom) - py) / drawableHeight;
-    outY = minY + (yPercent * (maxY - minY));
+    // Inverse of: screenY = (yOffset + drawableHeight) - ((y - minY) / (maxY - minY)) * drawableHeight
+    double yPercent = (double)((yOffset + drawableHeight) - py) / drawableHeight;
+    outY = minY + yPercent * (maxY - minY);
 
-    // 3. Optional: Clamp to bounds so clicking outside the box doesn't give -50
+    // Clamp to bounds
     if (outX < minX) outX = minX;
     if (outX > maxX) outX = maxX;
     if (outY < minY) outY = minY;
@@ -181,6 +207,81 @@ void CoordinatePanel::OnPaint(wxPaintEvent& evt) {
             dc.SetTextForeground(pt.color);
             dc.DrawText(wxString::Format("(%.0f,%.0f)", pt.x, pt.y), 
                        screenPt.x + 5, screenPt.y - 12);
+        }
+    }
+
+    // Draw scan grid preview
+    if (m_hasScanGrid) {
+        wxPen linePen(wxColour(100, 100, 255), 1, wxPENSTYLE_DOT);
+        wxBrush pointBrush(wxColour(60, 120, 255));
+
+        dc.SetPen(linePen);
+
+        // Draw connecting lines and points for each scan line
+        for (const auto& line : m_scanGridLines) {
+            // Draw lead-in: physicalStart -> first point
+            if (!line.points.empty()) {
+                wxPen leadPen(wxColour(255, 160, 0), 2, wxPENSTYLE_SHORT_DASH);
+                dc.SetPen(leadPen);
+                wxPoint leadStart = CoordToScreen(line.physicalStartX, line.physicalStartY);
+                wxPoint firstPt = CoordToScreen(line.points.front().x, line.points.front().y);
+                if (leadStart != firstPt) {
+                    dc.DrawLine(leadStart, firstPt);
+                    // Draw a small marker at the physical start
+                    dc.SetPen(*wxTRANSPARENT_PEN);
+                    dc.SetBrush(wxBrush(wxColour(255, 160, 0)));
+                    dc.DrawCircle(leadStart, 2);
+                }
+            }
+
+            // Draw scan path between measurement points
+            dc.SetPen(linePen);
+            for (size_t i = 1; i < line.points.size(); ++i) {
+                wxPoint from = CoordToScreen(line.points[i - 1].x, line.points[i - 1].y);
+                wxPoint to = CoordToScreen(line.points[i].x, line.points[i].y);
+                dc.DrawLine(from, to);
+            }
+
+            // Draw lead-out: last point -> physicalEnd
+            if (!line.points.empty()) {
+                wxPen leadPen(wxColour(255, 160, 0), 2, wxPENSTYLE_SHORT_DASH);
+                dc.SetPen(leadPen);
+                wxPoint lastPt = CoordToScreen(line.points.back().x, line.points.back().y);
+                wxPoint leadEnd = CoordToScreen(line.physicalEndX, line.physicalEndY);
+                if (lastPt != leadEnd) {
+                    dc.DrawLine(lastPt, leadEnd);
+                    dc.SetPen(*wxTRANSPARENT_PEN);
+                    dc.SetBrush(wxBrush(wxColour(255, 160, 0)));
+                    dc.DrawCircle(leadEnd, 2);
+                }
+            }
+
+            dc.SetPen(*wxTRANSPARENT_PEN);
+            dc.SetBrush(pointBrush);
+            for (const auto& pt : line.points) {
+                wxPoint screenPt = CoordToScreen(pt.x, pt.y);
+                dc.DrawCircle(screenPt, 3);
+            }
+            dc.SetPen(linePen);
+        }
+
+        // Draw traverse lines between scan lines (grey dotted)
+        wxPen traversePen(wxColour(200, 200, 200), 1, wxPENSTYLE_DOT);
+        dc.SetPen(traversePen);
+        for (size_t i = 1; i < m_scanGridLines.size(); ++i) {
+            const auto& prevLine = m_scanGridLines[i - 1];
+            const auto& currLine = m_scanGridLines[i];
+            wxPoint from = CoordToScreen(prevLine.physicalEndX, prevLine.physicalEndY);
+            wxPoint to = CoordToScreen(currLine.physicalStartX, currLine.physicalStartY);
+            dc.DrawLine(from, to);
+        }
+
+        // Mark start point in green
+        if (!m_scanGridLines.empty() && !m_scanGridLines[0].points.empty()) {
+            dc.SetPen(*wxTRANSPARENT_PEN);
+            dc.SetBrush(wxBrush(wxColour(0, 200, 0)));
+            wxPoint startPt = CoordToScreen(m_scanGridLines[0].points[0].x, m_scanGridLines[0].points[0].y);
+            dc.DrawCircle(startPt, 5);
         }
     }
 

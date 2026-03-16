@@ -7,12 +7,6 @@ SerialPortManager::SerialPortManager()
 
 SerialPortManager::~SerialPortManager() {
     ClosePort();
-
-    ioContext_.stop();
-    
-    if (ioThread_.joinable()) {
-        ioThread_.join();
-    }
 }
 
 std::vector<std::string> SerialPortManager::ScanPorts() {
@@ -68,7 +62,15 @@ bool SerialPortManager::OpenPort(const std::string& portName, unsigned int baudR
 }
 
 void SerialPortManager::ClosePort() {
-    if (serial_.is_open()) serial_.close();
+if (serial_.is_open()) {
+        serial_.close(); 
+    }
+    
+ioContext_.stop();
+
+if (ioThread_.joinable() && std::this_thread::get_id() != ioThread_.get_id()) {
+        ioThread_.join();
+    }
 }
 
 bool SerialPortManager::IsOpen() const {
@@ -115,9 +117,9 @@ void SerialPortManager::DoRead() {
                 }
                 DoRead();
             }
-            else {
-                std::cerr << "Read error: " << ec.message() << "\n";
-                ClosePort(); 
-            }
-        });
+            else if (ec != boost::asio::error::operation_aborted) {
+                    std::cerr << "Read error: " << ec.message() << "\n";
+                    ClosePort(); 
+                }
+            });
 }

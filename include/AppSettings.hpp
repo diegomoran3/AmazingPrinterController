@@ -10,6 +10,8 @@ struct GridPatternSettings {
     int speed = 6000;
     ScanDirection direction = ScanDirection::Horizontal;
     bool isZigzag = false;
+    bool isContinuous = false;
+    double leadDistance = 0.0;
 };
 
 struct AppSettings {
