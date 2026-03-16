@@ -1,0 +1,73 @@
+classDiagram
+  class MyApp {
+    -JsonHandler m_configHandler
+    -AppSettings m_settings
+  }
+
+  class MainFrame {
+    -shared_ptr~GrblController~ m_grbl
+    -AppSettings* m_settings
+    -CoordinatePanel* m_coordPanel
+    -GrblScanWindow* m_scanPanel
+    -GrblConfigDialog* m_configDlg
+  }
+
+  class CoordinatePanel {
+    -double minX, maxX, minY, maxY
+  }
+
+  class GrblScanWindow {
+    -shared_ptr~ScanHandler~ m_controller
+    -GridPatternSettings* m_settings
+  }
+
+  class GrblConfigDialog {
+    -shared_ptr~GrblController~ m_controller
+  }
+
+  class GrblController {
+    -unique_ptr~SerialPortManager~ m_serial
+    -GrblStatus m_currentStatus
+  }
+
+  class ScanHandler {
+    -shared_ptr~GrblController~ m_grbl
+  }
+
+  class SerialPortManager {
+    -boost::asio::serial_port serial_
+  }
+
+  class JsonHandler {
+    -string m_path
+  }
+
+  class AppSettings {
+    +GridPatternSettings lastUsedPattern
+  }
+
+  class GridPatternSettings
+
+  %% Application entry and configuration
+  MyApp --> MainFrame : instantiates
+  MyApp *-- JsonHandler : owns
+  MyApp *-- AppSettings : owns
+
+  %% Main UI and its components
+  MainFrame o-- AppSettings : points to
+  MainFrame *-- GrblController : owns shared instance
+  MainFrame *-- CoordinatePanel : owns
+  MainFrame *-- GrblScanWindow : owns
+  MainFrame ..> GrblConfigDialog : creates (modal)
+
+  %% Scan UI dependencies
+  GrblScanWindow *-- ScanHandler : owns shared instance
+  GrblScanWindow o-- GridPatternSettings : points to
+
+  %% Backend dependencies
+  ScanHandler o-- GrblController : uses
+  GrblConfigDialog o-- GrblController : uses
+  GrblController *-- SerialPortManager : owns unique instance
+  
+  %% Configuration dependencies
+  AppSettings *-- GridPatternSettings : contains

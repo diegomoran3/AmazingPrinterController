@@ -44,3 +44,16 @@ set(glaze_DISABLE_SIMD_WHEN_SUPPORTED ON)
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
 )
+
+# ── Install rules ──────────────────────────────────────────
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
+set(CPACK_GENERATOR "DEB")
+set(CPACK_PACKAGE_NAME "amazing-printer-converter")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_CONTACT "diegomoran3@gmail.com")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Diego Moran")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Amazing Printer Converter")
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local")
+include(CPack)
