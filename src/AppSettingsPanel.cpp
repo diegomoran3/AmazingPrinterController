@@ -47,15 +47,15 @@ void AppSettingsPanel::BuildUI()
     auto* pollRow = new wxBoxSizer(wxHORIZONTAL);
     pollRow->Add(new wxStaticText(pollParent, wxID_ANY, "Poll Rate:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
     m_spinPollRate = new wxSpinCtrl(pollParent, wxID_ANY, wxString::Format("%d", m_settings->statusPollRateHz),
-                                     wxDefaultPosition, wxSize(70, -1), wxSP_ARROW_KEYS,
-                                     1, 50, m_settings->statusPollRateHz);
+                                     wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS,
+                                     1, 10, m_settings->statusPollRateHz);
     m_spinPollRate->Bind(wxEVT_SPINCTRL, [this](wxSpinEvent&) {
         m_settings->statusPollRateHz = m_spinPollRate->GetValue();
         OnSettingChanged();
     });
-    pollRow->Add(m_spinPollRate, 0, wxRIGHT, 5);
+    pollRow->Add(m_spinPollRate, 1, wxRIGHT, 5);
     pollRow->Add(new wxStaticText(pollParent, wxID_ANY, "Hz"), 0, wxALIGN_CENTER_VERTICAL);
-    pollBox->Add(pollRow, 0, wxALL, 5);
+    pollBox->Add(pollRow, 0, wxEXPAND | wxALL, 5);
 
     mainSizer->Add(pollBox, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
 

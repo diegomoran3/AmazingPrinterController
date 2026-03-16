@@ -71,6 +71,7 @@ ioContext_.stop();
 if (ioThread_.joinable() && std::this_thread::get_id() != ioThread_.get_id()) {
         ioThread_.join();
     }
+    ioContext_.restart();
 }
 
 bool SerialPortManager::IsOpen() const {
