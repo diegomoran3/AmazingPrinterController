@@ -25766,3 +25766,9 @@ build/vcpkg_installed/x64-linux/share/glaze/glazeTargets.cmake
 build/vcpkg_installed/x64-linux/share/glaze/vcpkg_abi_info.txt
 build/vcpkg_installed/x64-linux/share/glaze/vcpkg.spdx.json
 Documentation/.~lock.Documentation_2.odt#
+build/CMakeFiles/AmazingPrinterConverter.dir/src/AppSettingsPanel.cpp.o
+build/CMakeFiles/AmazingPrinterConverter.dir/src/AppSettingsPanel.cpp.o.d
+build/CMakeFiles/AmazingPrinterConverter.dir/src/GrblControlPanel.cpp.o
+build/CMakeFiles/AmazingPrinterConverter.dir/src/GrblControlPanel.cpp.o.d
+build/CMakeFiles/AmazingPrinterConverter.dir/src/GrblScanPanel.cpp.o
+build/CMakeFiles/AmazingPrinterConverter.dir/src/GrblScanPanel.cpp.o.d
